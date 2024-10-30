@@ -13,7 +13,7 @@
 ### 부산대학교 정보컴퓨터공학부 김기윤, 강태진
 ## 🖥️개발환경
  - Language : Python
- - Version : 
+ - Version : 3.13.0
  - IDE : PyCharm, Visual Studio Code, PostgreSQL
 ## 🩹개발 로그
 ### 2024.10
