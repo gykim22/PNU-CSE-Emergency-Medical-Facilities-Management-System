@@ -1,0 +1,91 @@
+{% extends 'layout.html' %}
+
+{% block content %}
+  <div class="timeline">
+    <h2>직원 등록</h2>
+    <form id="join-form" action="/auth/join" method="post">
+      <div class="input-group">
+        <label for="join-user-type">사용자 타입</label>
+        <select id="join-user-type" name="user_type" required>
+          <option value="의사">의사</option>
+          <option value="간호사">간호사</option>
+        </select>
+      </div>
+      <div class="input-group">
+        <label for="join-authority-type">사용자 권한</label>
+        <select id="join-authority-type" name="authority_type" required>
+          <option value="1">전공 교수</option>
+          <option value="2">수간호사</option>
+          <option value="3">의사|간호사</option>
+        </select>
+      </div>
+      <div class="input-group">
+        <label for="join-gender">성별</label>
+        <select id="join-gender" name="gender" required>
+          <option value="M">남성</option>
+          <option value="F">여성</option>
+        </select>
+      </div>
+      <div class="input-group">
+        <label for="join-name">이름</label>
+        <input id="join-name" type="text" name="name" placeholder="OOO" required>
+      </div>
+      <div class="input-group">
+        <label for="join-age">나이</label>
+        <input id="join-age" type="text" name="age" placeholder="예: (35살이면) 35" required>
+      </div>
+      <div class="input-group" id="join-department-group" style="display: none;">
+        <label for="join-department">전공</label>
+        <input id="join-department" type="text" name="department" placeholder="예: 피부과 | 정형외과 등">
+      </div>
+      <div class="input-group">
+        <label for="join-year">연차</label>
+        <input id="join-year" type="text" name="year" placeholder="예: (6년차면) 6" required>
+      </div>
+      <div class="input-group">
+        <label for="join-salary">연봉</label>
+        <input id="join-salary" type="text" name="salary" placeholder="예: (1.2억이면) 1.2" required>
+      </div>
+      전화번호 / 비밀번호로 로그인합니다! 신중하게 작성하세요.
+      <div class="input-group">
+        <label for="join-phone_number">전화번호</label>
+        <input id="join-phone_number" type="text" name="phone_number" placeholder="예: 01012345678" required>
+      </div>
+      <div class="input-group">
+        <label for="join-password">비밀번호</label>
+        <input id="join-password" type="password" name="password" required>
+      </div>
+      <button id="join-btn" type="submit" class="btn">직원 등록</button>
+    </form>
+  </div>
+{% endblock %}
+
+{% block script %}
+  <script>
+    window.onload = () => {
+      if (new URL(location.href).searchParams.get('error')) {
+        alert('이미 존재하는 전화번호입니다.');
+      }
+    };
+    document.addEventListener('DOMContentLoaded', () => {
+      const userTypeSelect = document.getElementById('join-user-type');
+      const departmentGroup = document.getElementById('join-department-group');
+
+      // 사용자 타입이 바뀔 때마다 실행되는 이벤트
+      userTypeSelect.addEventListener('change', () => {
+        if (userTypeSelect.value === '의사') {
+          departmentGroup.style.display = 'block';  // 의사를 선택하면 전공 입력란 보이기
+        } else {
+          departmentGroup.style.display = 'none';   // 다른 항목을 선택하면 전공 입력란 숨기기
+        }
+      });
+
+      // 초기 선택 값에 따라 전공 입력란을 보여주거나 숨김
+      if (userTypeSelect.value === '의사') {
+        departmentGroup.style.display = 'block';
+      } else {
+        departmentGroup.style.display = 'none';
+      }
+    });
+  </script>
+{% endblock %}

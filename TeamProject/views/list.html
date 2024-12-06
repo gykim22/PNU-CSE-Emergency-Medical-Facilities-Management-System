@@ -1,0 +1,76 @@
+{% extends 'layout.html' %}
+
+{% block content %}
+  <div class="timeline">
+    <div class="">
+      <h2>의사 목록</h2>
+      <a id="staff-list" href="/" class="btn">뒤로가기</a>
+      <table border="1">
+        <thead>
+        <tr>
+        <tr>
+          <th><a href="/list?sort=id&order={{ 'desc' if currentSort == 'id' and currentOrder == 'asc' else 'asc' }}">ID</a></th>
+          <th><a href="/list?sort=role&order={{ 'desc' if currentSort == 'role' and currentOrder == 'asc' else 'asc' }}">직위</a></th>
+          <th><a href="/list?sort=year&order={{ 'desc' if currentSort == 'year' and currentOrder == 'asc' else 'asc' }}">연차</a></th>
+          <th><a href="/list?sort=salary&order={{ 'desc' if currentSort == 'salary' and currentOrder == 'asc' else 'asc' }}">연봉</a></th>
+          <th><a href="/list?sort=state&order={{ 'desc' if currentSort == 'state' and currentOrder == 'asc' else 'asc' }}">상태</a></th>
+          <th><a href="/list?sort=name&order={{ 'desc' if currentSort == 'name' and currentOrder == 'asc' else 'asc' }}">이름</a></th>
+          <th><a href="/list?sort=gender&order={{ 'desc' if currentSort == 'gender' and currentOrder == 'asc' else 'asc' }}">성별</a></th>
+          <th><a href="/list?sort=age&order={{ 'desc' if currentSort == 'age' and currentOrder == 'asc' else 'asc' }}">나이</a></th>
+          <th><a href="/list?sort=phone_number&order={{ 'desc' if currentSort == 'phone_number' and currentOrder == 'asc' else 'asc' }}">전화번호</a></th>
+          <th><a href="/list?sort=department&order={{ 'desc' if currentSort == 'department' and currentOrder == 'asc' else 'asc' }}">전공</a></th>
+        </tr>
+        </tr>
+        </thead>
+        <tbody>
+        {% for doctor in doctor %}
+        <tr>
+          <td>{{ doctor.ID }}</td>
+          <td>{{ doctor.Role }}</td>
+          <td>{{ doctor.Year }}</td>
+          <td>{{ doctor.Salary }}</td>
+          <td>{{ doctor.State }}</td>
+          <td>{{ doctor.Name }}</td>
+          <td>{{ doctor.Gender }}</td>
+          <td>{{ doctor.Age }}</td>
+          <td>{{ doctor.PhoneNumber }}</td>
+          <td>{{ doctor.Department }}</td>
+        </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+      <table border="1">
+        <thead>
+        <tr>
+        <tr>
+          <th><a href="/list?sort=id&order={{ 'desc' if currentSort == 'id' and currentOrder == 'asc' else 'asc' }}">ID</a></th>
+          <th><a href="/list?sort=role&order={{ 'desc' if currentSort == 'role' and currentOrder == 'asc' else 'asc' }}">직위</a></th>
+          <th><a href="/list?sort=year&order={{ 'desc' if currentSort == 'year' and currentOrder == 'asc' else 'asc' }}">연차</a></th>
+          <th><a href="/list?sort=salary&order={{ 'desc' if currentSort == 'salary' and currentOrder == 'asc' else 'asc' }}">연봉</a></th>
+          <th><a href="/list?sort=state&order={{ 'desc' if currentSort == 'state' and currentOrder == 'asc' else 'asc' }}">상태</a></th>
+          <th><a href="/list?sort=name&order={{ 'desc' if currentSort == 'name' and currentOrder == 'asc' else 'asc' }}">이름</a></th>
+          <th><a href="/list?sort=gender&order={{ 'desc' if currentSort == 'gender' and currentOrder == 'asc' else 'asc' }}">성별</a></th>
+          <th><a href="/list?sort=age&order={{ 'desc' if currentSort == 'age' and currentOrder == 'asc' else 'asc' }}">나이</a></th>
+          <th><a href="/list?sort=phone_number&order={{ 'desc' if currentSort == 'phone_number' and currentOrder == 'asc' else 'asc' }}">전화번호</a></th>
+        </tr>
+        </tr>
+        </thead>
+        <tbody>
+        {% for nurse in nurse %}
+        <tr>
+          <td>{{ nurse.ID }}</td>
+          <td>{{ nurse.Role }}</td>
+          <td>{{ nurse.Year }}</td>
+          <td>{{ nurse.Salary }}</td>
+          <td>{{ nurse.State }}</td>
+          <td>{{ nurse.Name }}</td>
+          <td>{{ nurse.Gender }}</td>
+          <td>{{ nurse.Age }}</td>
+          <td>{{ nurse.PhoneNumber }}</td>
+        </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+{% endblock %}
