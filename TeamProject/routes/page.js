@@ -24,7 +24,7 @@ router.use((req, res, next) => {
 router.get('/profile', isLoggedIn, renderProfile);
 router.get('/join', renderJoin);
 router.get('/hashtag', renderHashtag);
-router.get('/list', isLoggedIn, checkAuthority, renderList);
+router.get('/list', isLoggedIn, renderList);
 router.get('/', renderMain);
 
 module.exports = router;

@@ -50,18 +50,32 @@ exports.renderMain = async (req, res, next) => {
 
 
 exports.renderList = async (req, res, next) => {
-    const { sort = 'id', order = 'asc' } = req.query; // 기본값 설정
+    const {
+        doctorSort = 'id',
+        doctorOrder = 'asc',
+        nurseSort = 'id',
+        nurseOrder = 'asc',
+    } = req.query; // 기본값 설정
+
     const validSortFields = ['id', 'role', 'year', 'salary', 'state', 'name', 'gender', 'age', 'phone_number', 'department'];
     const validOrders = ['asc', 'desc'];
 
     try {
         // 잘못된 값 방지
-        if (!validSortFields.includes(sort) || !validOrders.includes(order)) {
+        if (
+            !validSortFields.includes(doctorSort) || !validOrders.includes(doctorOrder) ||
+            !validSortFields.includes(nurseSort) || !validOrders.includes(nurseOrder)
+        ) {
             throw new Error('Invalid sort or order value');
         }
 
-        const doctorResult = await db.query(`
-            SELECT
+        // 사용자 권한 확인 (병원장만 salary를 볼 수 있음)
+        const isAdmin = req.user && req.user.authority === "병원장";
+        console.log(isAdmin);
+        let doctorQuery;
+        let nurseQuery;
+        if(isAdmin) {
+            doctorQuery =`SELECT
                 id AS "ID",
                 role AS "Role",
                 year AS "Year",
@@ -73,11 +87,8 @@ exports.renderList = async (req, res, next) => {
                 phone_number AS "PhoneNumber",
                 department AS "Department"
             FROM Doctor
-            ORDER BY ${sort} ${order}` // 동적 정렬 쿼리
-        );
-
-        const nurseResult = await db.query(`
-            SELECT
+            ORDER BY ${doctorSort} ${doctorOrder}`;
+            nurseQuery = `SELECT
                 id AS "ID",
                 role AS "Role",
                 year AS "Year",
@@ -88,9 +99,38 @@ exports.renderList = async (req, res, next) => {
                 age AS "Age",
                 phone_number AS "PhoneNumber"
             FROM Nurse
-            ORDER BY ${sort} ${order}` // 동적 정렬 쿼리
-        );
+            ORDER BY ${nurseSort} ${nurseOrder}`;
+        } else {
+            doctorQuery =`SELECT
+                id AS "ID",
+                role AS "Role",
+                year AS "Year",
+                state AS "State",
+                name AS "Name",
+                gender AS "Gender",
+                age AS "Age",
+                phone_number AS "PhoneNumber",
+                department AS "Department"
+            FROM Doctor
+            ORDER BY ${doctorSort} ${doctorOrder}`;
+            nurseQuery = `SELECT
+                id AS "ID",
+                role AS "Role",
+                year AS "Year",
+                state AS "State",
+                name AS "Name",
+                gender AS "Gender",
+                age AS "Age",
+                phone_number AS "PhoneNumber"
+            FROM Nurse
+            ORDER BY ${nurseSort} ${nurseOrder}`;
+        }
 
+        // Doctor 테이블 정렬
+        const doctorResult = await db.query(doctorQuery);
+
+        // Nurse 테이블 정렬
+        const nurseResult = await db.query(nurseQuery);
 
         const doctor = doctorResult.rows;
         const nurse = nurseResult.rows;
@@ -98,8 +138,10 @@ exports.renderList = async (req, res, next) => {
             title: '직원 목록',
             doctor,
             nurse,
-            currentSort: sort,  // 현재 정렬 기준
-            currentOrder: order // 현재 정렬 방향
+            currentDoctorSort: doctorSort,
+            currentDoctorOrder: doctorOrder,
+            currentNurseSort: nurseSort,
+            currentNurseOrder: nurseOrder,
         });
     } catch (err) {
         console.error(err);
