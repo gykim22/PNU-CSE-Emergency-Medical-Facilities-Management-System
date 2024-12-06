@@ -1,6 +1,6 @@
 const express = require('express');
 const { isLoggedIn, isNotLoggedIn } = require('../middlewares');
-const { renderProfile, renderJoin, renderMain, renderHashtag, renderList} = require('../controllers/page'); // 여기 추가?
+const { renderProfile, renderJoin, renderMain, renderHashtag, renderList, renderJoinPatient} = require('../controllers/page'); // 여기 추가?
 
 const router = express.Router();
 
@@ -23,6 +23,7 @@ router.use((req, res, next) => {
 
 router.get('/profile', isLoggedIn, renderProfile);
 router.get('/join', renderJoin);
+router.get('/join-patient', renderJoinPatient);
 router.get('/hashtag', renderHashtag);
 router.get('/list', isLoggedIn, renderList);
 router.get('/', renderMain);

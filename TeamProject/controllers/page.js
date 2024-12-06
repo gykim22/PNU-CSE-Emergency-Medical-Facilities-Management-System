@@ -8,6 +8,10 @@ exports.renderJoin = (req, res) => {
     res.render('join', { title: '직원 등록 - TODO' });
 };
 
+exports.renderJoinPatient = (req, res) => {
+    res.render('joinPatient', { title: '환자 등록 - TODO' });
+};
+
 exports.renderMain = async (req, res, next) => {
     try {
         // 게시글 데이터 조회

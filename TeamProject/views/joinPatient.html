@@ -1,0 +1,104 @@
+{% extends 'layout.html' %}
+
+{% block content %}
+  <div class="timeline">
+    <h2>직원 등록</h2>
+    <form id="join-form" action="/auth/join-patient" method="post">
+      <div class="input-group">
+        <label for="join-user-type">사용자 타입</label>
+        <select id="join-user-type" name="user_type" required>
+          <option value="환자">환자</option>
+          <option value="보호자">보호자</option>
+        </select>
+      </div>
+
+      <div class="input-group">
+        <label for="join-gender">성별</label>
+        <select id="join-gender" name="gender" required>
+          <option value="M">남성</option>
+          <option value="F">여성</option>
+        </select>
+      </div>
+
+      <div class="input-group">
+        <label for="join-name">이름</label>
+        <input id="join-name" type="text" name="name" placeholder="OOO" required>
+      </div>
+
+      <div class="input-group">
+        <label for="join-age">나이</label>
+        <input id="join-age" type="text" name="age" placeholder="예: (35살이면) 35" required>
+      </div>
+
+      <!-- 환자에 해당하는 필드 -->
+      <div class="input-group" id="join-acu" style="display: none;">
+        <label for="join-acuity">위험도</label>
+        <input id="join-acuity" type="text" name="acuity" placeholder="예: 1 - 5 중 입력. 1:경증 | 5:중증">
+      </div>
+      <div class="input-group" id="join-dis" style="display: none;">
+        <label for="join-disease">질병 명</label>
+        <input id="join-disease" type="text" name="disease" placeholder="예: 독감 | 코로나">
+      </div>
+      <div class="input-group" id="join-ad-date" style="display: none;">
+        <label for="join-admission-date">입원 날짜</label>
+        <input id="join-admission-date" type="date" name="admission_date">
+      </div>
+
+      <!-- 보호자에 해당하는 필드 -->
+      <div class="input-group" id="join-relation" style="display: none;">
+        <label for="join-relationship">환자와의 관계</label>
+        <input id="join-relationship" type="text" name="relationship" placeholder="예: 부모, 배우자 등">
+      </div>
+      <div class="input-group" id="join-p-phone" style="display: none;">
+        <label for="join-patient-phone">환자 전화번호</label>
+        <input id="join-patient-phone" type="text" name="patient_phone" placeholder="환자 전화번호">
+      </div>
+
+      <div class="input-group">
+        <label for="join-phone_number">전화번호</label>
+        <input id="join-phone_number" type="text" name="phone_number" placeholder="예: 01012345678">
+      </div>
+      <div class="input-group">
+        <label for="join-password">비밀번호</label>
+        <input id="join-password" type="password" name="password">
+      </div>
+      <button id="join-btn" type="submit" class="btn">등록</button>
+    </form>
+    <a id="staff-list" href="/" class="btn">뒤로가기</a>
+  </div>
+{% endblock %}
+
+{% block script %}
+  <script>
+    window.onload = () => {
+      if (new URL(location.href).searchParams.get('error')) {
+        alert('이미 존재하는 전화번호입니다.');
+      }
+    };
+    // 사용자 타입 변경 시, 해당하는 필드를 보이거나 숨기기
+    document.getElementById('join-user-type').addEventListener('change', function() {
+      const userType = this.value;
+
+      // 모든 환자 관련 필드 숨기기
+      document.getElementById('join-acu').style.display = 'none';
+      document.getElementById('join-dis').style.display = 'none';
+      document.getElementById('join-ad-date').style.display = 'none';
+
+      // 모든 보호자 관련 필드 숨기기
+      document.getElementById('join-relation').style.display = 'none';
+      document.getElementById('join-p-phone').style.display = 'none';
+
+      if (userType === '환자') {
+        document.getElementById('join-acu').style.display = 'block';
+        document.getElementById('join-dis').style.display = 'block';
+        document.getElementById('join-ad-date').style.display = 'block';
+      } else if (userType === '보호자') {
+        document.getElementById('join-relation').style.display = 'block';
+        document.getElementById('join-p-phone').style.display = 'block';
+      }
+    });
+
+    // 초기 상태에 맞게 필드 표시
+    document.getElementById('join-user-type').dispatchEvent(new Event('change'));
+  </script>
+{% endblock %}
