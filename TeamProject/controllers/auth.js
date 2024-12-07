@@ -24,10 +24,9 @@ exports.join = async (req, res, next) => {
         }
         // 비밀번호 해싱
         const hash = await bcrypt.hash(password, 12);
+
         // 사용자 데이터 삽입
-
         let role;
-
         if(authority_type === "1")
             role = "전공교수";
         else if (authority_type === "2")

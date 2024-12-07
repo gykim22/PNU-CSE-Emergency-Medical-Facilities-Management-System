@@ -2,7 +2,7 @@
 
 {% block content %}
   <div class="timeline">
-    <h2>직원 등록</h2>
+    <h2>환자 등록</h2>
     <form id="join-form" action="/auth/join-patient" method="post">
       <div class="input-group">
         <label for="join-user-type">사용자 타입</label>
@@ -76,6 +76,7 @@
       }
     };
     // 사용자 타입 변경 시, 해당하는 필드를 보이거나 숨기기
+    const formHeading = document.querySelector('.timeline h2'); // <h2> 태그
     document.getElementById('join-user-type').addEventListener('change', function() {
       const userType = this.value;
 
@@ -92,9 +93,11 @@
         document.getElementById('join-acu').style.display = 'block';
         document.getElementById('join-dis').style.display = 'block';
         document.getElementById('join-ad-date').style.display = 'block';
+        formHeading.textContent = '환자 등록'; // <h2> 텍스트 변경
       } else if (userType === '보호자') {
         document.getElementById('join-relation').style.display = 'block';
         document.getElementById('join-p-phone').style.display = 'block';
+        formHeading.textContent = '보호자 등록'; // <h2> 텍스트 변경
       }
     });
 

@@ -3,11 +3,15 @@
 {% block content %}
   <div class="timeline">
     <div class="followings half">
-      <h2>담당환자 목록</h2>
-      {% if user.followings %}
-        {% for following in user.followings %}
-          <div>{{following.nick}}</div>
-        {% endfor %}
+      <h2>프로필 설정</h2>
+      {% if user %}
+        <form id="state-form" action="/profile/state" method="POST">
+          <select id="join-authority-type" name="state" required>
+            <option value="출근">출근</option>
+            <option value="퇴근">퇴근</option>
+          </select>
+          <button type="submit" class="btn">저장</button>
+        </form>
       {% endif %}
     </div>
     <div class="followers half">

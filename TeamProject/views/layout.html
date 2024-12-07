@@ -14,12 +14,12 @@
           {% if user and user.phone_number %}
             <div class="user-name">{{'안녕하세요! ' + user.name + '님'}}</div>
             <div class="half">
-              <div>팔로잉</div>
+              <div>담당 환자 수</div>
               <div class="count following-count">{{followingCount}}</div>
             </div>
             <div class="half">
-              <div>팔로워</div>
-              <div class="count follower-count">{{followerCount}}</div>
+              <div>상태</div>
+              <div class="count follower-count">{{user.state}}</div>
             </div>
           <input id="my-id" type="hidden" value="{{user.phone_number}}">
           <a id="my-profile" href="/profile" class="btn">내 프로필</a>

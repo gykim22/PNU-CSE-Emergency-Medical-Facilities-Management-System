@@ -40,12 +40,16 @@ module.exports = () => {
                 // 사용자 객체에 팔로잉 및 팔로워 데이터 추가
                 user.followings = followingsResult.rows;
                 user.followers = followersResult.rows;
-
                  */
-
-                user = await db.query('SELECT phone_number, name, role AS authority FROM Doctor WHERE phone_number = $1', [phone_number]);
-                if (user.rows.length === 0)
-                    user = await db.query('SELECT phone_number, name, role AS authority FROM Nurse WHERE phone_number = $1', [phone_number]);
+                if(user.authority <= 3) { // 직원
+                    user = await db.query('SELECT phone_number, name, state, role AS authority FROM Doctor WHERE phone_number = $1', [phone_number]);
+                    if (user.rows.length === 0)
+                        user = await db.query('SELECT phone_number, name, state, role AS authority FROM Nurse WHERE phone_number = $1', [phone_number]);
+                } else { // 환자|보호자
+                    user = await db.query('SELECT phone_number, name, state, role AS authority FROM Doctor WHERE phone_number = $1', [phone_number]);
+                    if (user.rows.length === 0)
+                        user = await db.query('SELECT phone_number, name, state, role AS authority FROM Nurse WHERE phone_number = $1', [phone_number]);
+                }
                 done(null, user.rows[0]);
             } else done(null);
         } catch (err) {

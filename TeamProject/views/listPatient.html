@@ -1,0 +1,100 @@
+{% extends 'layout.html' %}
+
+{% block content %}
+<style>
+  .table-container {
+    overflow-x: auto;
+
+  }
+
+  table {
+    width: 100%;
+  }
+
+  th, td {
+    padding: 10px;
+    text-align: left;
+
+  }
+
+  th a {
+    color: inherit;
+  }
+</style>
+  <div class="timeline">
+    <div class="">
+      <h2>환자 목록</h2>
+      <table border="1">
+        <thead>
+        <tr>
+        <tr>
+          <th><a href="/list-patient?patientSort=name&patientOrder={{ 'desc' if currentpatientSort == 'name' and currentpatientOrder == 'asc' else 'asc' }}">이름</a></th>
+          <th><a href="/list-patient?patientSort=gender&patientOrder={{ 'desc' if currentpatientSort == 'gender' and currentpatientOrder == 'asc' else 'asc' }}">성별</a></th>
+          <th><a href="/list-patient?patientSort=age&patientOrder={{ 'desc' if currentpatientSort == 'age' and currentpatientOrder == 'asc' else 'asc' }}">나이</a></th>
+          <th><a href="/list-patient?patientSort=phone_number&patientOrder={{ 'desc' if currentpatientSort == 'phone_number' and currentpatientOrder == 'asc' else 'asc' }}">전화번호</a></th>
+          <th><a href="/list-patient?patientSort=next_of_kin&patientOrder={{ 'desc' if currentpatientSort == 'next_of_kin' and currentpatientOrder == 'asc' else 'asc' }}">보호자 전화번호</a></th>
+          <th><a href="/list-patient?patientSort=acuity_level&patientOrder={{ 'desc' if currentpatientSort == 'acuity_level' and currentpatientOrder == 'asc' else 'asc' }}">중증도</a></th>
+          <th><a href="/list-patient?patientSort=disease&patientOrder={{ 'desc' if currentpatientSort == 'disease' and currentpatientOrder == 'asc' else 'asc' }}">질병</a></th>
+          <th><a href="/list-patient?patientSort=hospitalization_date&patientOrder={{ 'desc' if currentpatientSort == 'hospitalization_date' and currentpatientOrder == 'asc' else 'asc' }}">입원 일자</a></th>
+          <th>삭제</th> <!-- 삭제 버튼을 위한 열 추가 -->
+        </tr>
+        </tr>
+        </thead>
+        <tbody>
+        {% for patient in patient %}
+        <tr>
+          <td>{{ patient.Name }}</td>
+          <td>{{ patient.Gender }}</td>
+          <td>{{ patient.Age }}</td>
+          <td>{{ patient.PhoneNumber }}</td>
+          <td>{{ patient.KinNumber }}</td>
+          <td>{{ patient.Acuity }}</td>
+          <td>{{ patient.Disease }}</td>
+          <td>{{ patient.HospitalizationDate }}</td>
+          <td>
+            <!-- 삭제 버튼 추가 -->
+            <a href="/delete-patient?phone_number={{ patient.PhoneNumber }}">삭제</a>
+          </td>
+        </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+      <h2>보호자 목록</h2>
+      <table border="1">
+        <thead>
+        <tr>
+        <tr>
+          <th><a href="/list-patient?kinSort=nok_name&kinOrder={{ 'desc' if currentkinSort == 'nok_name' and currentkinOrder == 'asc' else 'asc' }}">이름</a></th>
+          <th><a href="/list-patient?kinSort=gender&kinOrder={{ 'desc' if currentkinSort == 'gender' and currentkinOrder == 'asc' else 'asc' }}">성별</a></th>
+          <th><a href="/list-patient?kinSort=age&kinOrder={{ 'desc' if currentkinSort == 'age' and currentkinOrder == 'asc' else 'asc' }}">나이</a></th>
+          <th><a href="/list-patient?kinSort=phone_number&kinOrder={{ 'desc' if currentkinSort == 'phone_number' and currentkinOrder == 'asc' else 'asc' }}">전화번호</a></th>
+          <th><a href="/list-patient?kinSort=patient_relationship&kinOrder={{ 'desc' if currentkinSort == 'patient_relationship' and currentkinOrder == 'asc' else 'asc' }}">관계</a></th>
+          <th><a href="/list-patient?kinSort=patient_name&kinOrder={{ 'desc' if currentkinSort == 'patient_name' and currentkinOrder == 'asc' else 'asc' }}">환자 이름</a></th>
+          <th><a href="/list-patient?kinSort=patient_phonenumber&kinOrder={{ 'desc' if currentkinSort == 'patient_phonenumber' and currentkinOrder == 'asc' else 'asc' }}">환자 전화번호</a></th>
+          <th>삭제</th> <!-- 삭제 버튼을 위한 열 추가 -->
+        </tr>
+        </tr>
+        </thead>
+        <tbody>
+        {% for kin in kin %}
+        <tr>
+          <td>{{ kin.Name }}</td>
+          <td>{{ kin.Gender }}</td>
+          <td>{{ kin.Age }}</td>
+          <td>{{ kin.PhoneNumber }}</td>
+          <td>{{ kin.relation }}</td>
+          <td>{{ kin.PatientName }}</td>
+          <td>{{ kin.PatientPhoneNumber }}</td>
+          <td>
+            <!-- 삭제 버튼 추가 -->
+            <a href="/delete-kin?phone_number={{ kin.PhoneNumber }}">삭제</a>
+          </td>
+        </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+      <a id="back" href="/" class="btn">뒤로가기</a>
+    </div>
+  </div>
+{% endblock %}
+
