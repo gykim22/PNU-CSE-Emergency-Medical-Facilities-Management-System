@@ -31,6 +31,8 @@
           {% endif %}
           {% if user.authority != "환자" and user.authority != "보호자" %}
             <a id="join-patient" href="/join-patient" class="btn">환자 등록</a>
+            <a id="view-emails" href="/emails" class="btn">이메일 확인</a>
+            <a id="send-email" href="/send-email" class="btn">이메일 보내기</a>
           {% endif %}
         {% else %}
           <form id="login-form" action="/auth/login" method="post">

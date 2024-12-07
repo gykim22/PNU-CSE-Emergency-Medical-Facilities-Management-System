@@ -1,0 +1,63 @@
+{% extends 'layout.html' %}
+
+{% block content %}
+<style>
+  form {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    max-width: 600px;
+    margin: 0 auto;
+    padding: 20px;
+    background-color: #f9f9f9;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  }
+
+  label {
+    font-weight: bold;
+    margin: 10px 0 5px;
+  }
+
+  input[type="text"], textarea {
+    padding: 10px;
+    font-size: 1rem;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    margin-bottom: 15px;
+  }
+
+  button {
+    padding: 12px;
+    background-color: #4CAF50;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    font-size: 1rem;
+    cursor: pointer;
+  }
+
+  button:hover {
+    background-color: #45a049;
+  }
+
+</style>
+
+<div class="email-form">
+  <h2>이메일 작성</h2>
+  <form action="/send-email" method="POST">
+    <label for="receiverPhoneNumber">수신자 전화번호:</label>
+    <input type="text" id="receiverPhoneNumber" name="receiverPhoneNumber" required>
+
+    <label for="subject">제목:</label>
+    <input type="text" id="subject" name="subject" required>
+
+    <label for="content">내용:</label>
+    <textarea id="content" name="content" rows="6" required></textarea>
+
+    <button type="submit">이메일 보내기</button>
+  </form>
+</div>
+<a id="back" href="/" class="btn">뒤로가기</a>
+
+{% endblock %}

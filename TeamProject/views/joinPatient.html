@@ -71,7 +71,10 @@
 {% block script %}
   <script>
     window.onload = () => {
-      if (new URL(location.href).searchParams.get('error')) {
+      const errorParam = new URL(location.href).searchParams.get('error');
+      if (errorParam === 'none') {
+        alert('환자 정보가 존재하지 않습니다.');
+      } else if (errorParam) {
         alert('이미 존재하는 전화번호입니다.');
       }
     };

@@ -1,0 +1,60 @@
+{% extends 'layout.html' %}
+
+{% block content %}
+<style>
+  table {
+    width: 100%;
+  }
+
+  th, td {
+    padding: 10px;
+    text-align: left;
+  }
+
+  th a {
+    color: inherit;
+  }
+</style>
+
+<div class="timeline">
+  <h2>이메일 목록</h2>
+  <table id="emailList">
+    <thead>
+    <tr>
+      <th>이메일 ID</th>
+      <th>보낸 사람</th>
+      <th>받는 사람</th>
+      <th>내용</th>
+      <th>삭제</th>
+    </tr>
+    </thead>
+    <tbody>
+    <!-- 보낸 이메일 -->
+    {% for email in sentEmails %}
+    <tr>
+      <td>{{ email.email_id }}</td>
+      <td>{{ email.sender_pn }}</td>
+      <td>{{ email.receiver_pn }}</td>
+      <td>{{ email.detail }}</td>
+      <td>
+        <a href="/delete-email?email_id={{ email.email_id }}&type=sender" onclick="return confirm('이 이메일을 삭제하시겠습니까?')">삭제</a>
+      </td>
+    </tr>
+    {% endfor %}
+    <!-- 받은 이메일 -->
+    {% for email in receivedEmails %}
+    <tr>
+      <td>{{ email.email_id }}</td>
+      <td>{{ email.sender_pn }}</td>
+      <td>{{ email.receiver_pn }}</td>
+      <td>{{ email.detail }}</td>
+      <td>
+        <a href="/delete-email?email_id={{ email.email_id }}&type=receiver" onclick="return confirm('이 이메일을 삭제하시겠습니까?')">삭제</a>
+      </td>
+    </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+<a id="back" href="/" class="btn">뒤로가기</a>
+{% endblock %}
