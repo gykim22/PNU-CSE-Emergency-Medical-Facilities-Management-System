@@ -1,6 +1,20 @@
 {% extends 'layout.html' %}
 
 {% block content %}
+<style>
+  table {
+    width: 100%;
+  }
+
+  th, td {
+    padding: 10px;
+    text-align: left;
+  }
+
+  th a {
+    color: inherit;
+  }
+</style>
   <div class="timeline">
     <div class="followings half">
       <h2>프로필 설정</h2>
@@ -16,11 +30,32 @@
     </div>
     <div class="followers half">
       <h2>담당환자 목록</h2>
-      {% if user.followers %}
-        {% for follower in user.followers %}
-          <div>{{follower.nick}}</div>
+      <table border="1">
+        <thead>
+        <tr>
+        <tr>
+          <th><a href="/profile?mySort=pt.name&myOrder={{ 'desc' if currentmySort == 'pt.name' and currentmyOrder == 'asc' else 'asc' }}">이름</a></th>
+          <th><a href="/profile?mySort=pt.gender&myOrder={{ 'desc' if currentmySort == 'pt.gender' and currentmyOrder == 'asc' else 'asc' }}">성별</a></th>
+          <th><a href="/profile?mySort=pt.age&myOrder={{ 'desc' if currentmySort == 'pt.age' and currentmyOrder == 'asc' else 'asc' }}">나이</a></th>
+          <th><a href="/profile?mySort=p.phone_number&myOrder={{ 'desc' if currentmySort == 'p.phone_number' and currentmyOrder == 'asc' else 'asc' }}">전화번호</a></th>
+          <th><a href="/profile?mySort=pt.disease&myOrder={{ 'desc' if currentmySort == 'pt.disease' and currentmyOrder == 'asc' else 'asc' }}">병명</a></th>
+          <th><a href="/profile?mySort=pt.acuity_level&myOrder={{ 'desc' if currentmySort == 'pt.acuity_level' and currentmyOrder == 'asc' else 'asc' }}">위험도</a></th>
+        </tr>
+        </tr>
+        </thead>
+        <tbody>
+        {% for prescription in prescription %}
+        <tr>
+          <td>{{ prescription.PatientName }}</td>
+          <td>{{ prescription.PatientAge }}</td>
+          <td>{{ prescription.PatientGender }}</td>
+          <td>{{ prescription.patientPhoneNumber }}</td>
+          <td>{{ prescription.PatientDisease }}</td>
+          <td>{{ prescription.PatientAcuityLevel }}</td>
+        </tr>
         {% endfor %}
-      {% endif %}
+        </tbody>
+      </table>
     </div>
   </div>
 <a id="back" href="/" class="btn">뒤로가기</a>

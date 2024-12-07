@@ -67,8 +67,9 @@
       <th><a href="/prescription?mySort=pt.disease&myOrder={{ 'desc' if currentmySort == 'pt.disease' and currentmyOrder == 'asc' else 'asc' }}">병명</a></th>
       <th><a href="/prescription?mySort=pt.acuity_level&myOrder={{ 'desc' if currentmySort == 'pt.acuity_level' and currentmyOrder == 'asc' else 'asc' }}">위험도</a></th>
       <th><a href="/prescription?mySort=d.name&myOrder={{ 'desc' if currentmySort == 'd.name' and currentmyOrder == 'asc' else 'asc' }}">담당의</a></th>
-      <th><a href="/prescription?mySort=p.prescription&myOrder={{ 'desc' if currentmySort == 'p.prescription' and currentmyOrder == 'asc' else 'asc' }}">[ㅤㅤㅤㅤㅤㅤㅤ처방 내역ㅤㅤㅤㅤㅤㅤㅤ]</a></th>
+      <th><a href="/prescription?mySort=p.prescription&myOrder={{ 'desc' if currentmySort == 'p.prescription' and currentmyOrder == 'asc' else 'asc' }}">[ㅤㅤㅤㅤㅤ처방 내역ㅤㅤㅤㅤㅤ]</a></th>
       <th>처방</th>
+      <th>철회</th>
     </tr>
     </tr>
     </thead>
@@ -76,14 +77,17 @@
     {% for prescription in prescription %}
     <tr>
       <td>{{ prescription.PatientName }}</td>
-      <td>{{ prescription.PatientAge }}</td>
       <td>{{ prescription.PatientGender }}</td>
+      <td>{{ prescription.PatientAge }}</td>
       <td>{{ prescription.PatientDisease }}</td>
       <td>{{ prescription.PatientAcuityLevel }}</td>
       <td>{{ prescription.DoctorName }}</td>
       <td>{{ prescription.Prescription }}</td>
       <td>
         <input type="radio" name="selected" value="{{ prescription.PhoneNumber}}" onclick="showEditFields('{{ prescription.PhoneNumber}}')">
+      </td>
+      <td>
+        <a href="/deletePrescription?phone_number={{ prescription.PhoneNumber }}">철회</a>
       </td>
     </tr>
     {% endfor %}
@@ -112,6 +116,10 @@
 
 {% block script %}
 <script>
+  const alertMessage = "{{ alertMessage | safe }}";
+  if (alertMessage) {
+    alert(alertMessage);
+  }
   function showEditFields(phoneNumber) {
     // 공통 필드 설정
     document.getElementById('PhoneNumber').value = phoneNumber;

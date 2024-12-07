@@ -20,8 +20,9 @@ module.exports = () => {
                 console.log(user);
                 if(user.authority <= 3) { // 직원
                     user = await db.query('SELECT phone_number, name, state, role AS authority FROM Doctor WHERE phone_number = $1', [phone_number]);
-                    if (user.rows.length === 0)
+                    if (user.rows.length === 0) {
                         user = await db.query('SELECT phone_number, name, state, role AS authority FROM Nurse WHERE phone_number = $1', [phone_number]);
+                    }
                 } else { // 환자|보호자
                     user = await db.query('SELECT phone_number, name, state, role AS authority FROM Doctor WHERE phone_number = $1', [phone_number]);
                     if (user.rows.length === 0)
