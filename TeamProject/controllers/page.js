@@ -106,6 +106,167 @@ exports.renderMain = async (req, res, next) => {
     }
 };
 
+exports.renderEmails = async (req, res, next) => {
+    try {
+        // 로그인된 사용자 정보 확인
+        if (!req.user || !req.user.phone_number) {
+            return res.status(401).send('로그인 정보가 없습니다.');
+        }
+
+        const phoneNumber = req.user.phone_number; // 로그인된 사용자 ID
+        console.log('로그인된 사용자 전화번호:', phoneNumber); // 디버깅용
+
+        // 보낸 이메일 목록 조회
+        const sentEmailsResult = await db.query(`
+            SELECT * FROM Email WHERE Sender_PN = $1 AND sender_delete = FALSE ORDER BY Create_Date DESC
+        `, [phoneNumber]);
+
+        // 받은 이메일 목록 조회
+        const receivedEmailsResult = await db.query(`
+            SELECT * FROM Email WHERE Receiver_PN = $1 AND receiver_delete = FALSE ORDER BY Create_Date DESC
+        `, [phoneNumber]);
+
+        // 이메일 목록을 각각 변수에 담기
+        const sentEmails = sentEmailsResult.rows;
+        const receivedEmails = receivedEmailsResult.rows;
+
+        // 쿼리 결과 확인
+        console.log('보낸 이메일 목록:', sentEmails);
+        console.log('받은 이메일 목록:', receivedEmails);
+
+        // 이메일 목록이 없는 경우 처리
+        if (sentEmails.length === 0 && receivedEmails.length === 0) {
+            console.log('이메일이 없습니다.');
+        }
+
+        // 이메일 목록 페이지 렌더링
+        res.render('email', {
+            title: '이메일 확인',
+            sentEmails,
+            receivedEmails,
+            noSentEmails: sentEmails.length === 0, // 보낸 이메일이 없을 때
+            noReceivedEmails: receivedEmails.length === 0, // 받은 이메일이 없을 때
+        });
+
+    } catch (err) {
+        console.error('에러 발생:', err);
+        next(err); // 에러 미들웨어로 전달
+    }
+};
+
+exports.deleteEmail = async (req, res, next) => {
+    try {
+        const { email_id, type } = req.query;
+
+        // email_id와 type 검증
+        if (!email_id || !type) {
+            return res.status(400).send('잘못된 요청입니다. email_id와 type을 확인하세요.');
+        }
+
+        const phoneNumber = req.user.phone_number; // 로그인된 사용자 전화번호
+        console.log('삭제 요청:', { email_id, type, phoneNumber });
+
+        // 현재 이메일 정보 가져오기
+        const emailResult = await db.query(
+            `SELECT * FROM Email WHERE Email_ID = $1`,
+            [email_id]
+        );
+        const email = emailResult.rows[0];
+
+        if (!email) {
+            return res.status(404).send('이메일을 찾을 수 없습니다.');
+        }
+
+        // 삭제 권한 확인
+        if (
+            (type === 'sender' && email.sender_pn !== phoneNumber) ||
+            (type === 'receiver' && email.receiver_pn !== phoneNumber)
+        ) {
+            return res.status(403).send('삭제 권한이 없습니다.');
+        }
+
+        // 삭제 플래그 업데이트
+        if (type === 'sender') {
+            await db.query(
+                `UPDATE Email SET Sender_Delete = TRUE WHERE Email_ID = $1`,
+                [email_id]
+            );
+        } else if (type === 'receiver') {
+            await db.query(
+                `UPDATE Email SET Receiver_Delete = TRUE WHERE Email_ID = $1`,
+                [email_id]
+            );
+        } else {
+            return res.status(400).send('잘못된 삭제 요청입니다.');
+        }
+
+        // 이메일의 최종 삭제 여부 확인
+        const updatedEmailResult = await db.query(
+            `SELECT Sender_Delete, Receiver_Delete FROM Email WHERE Email_ID = $1`,
+            [email_id]
+        );
+        const updatedEmail = updatedEmailResult.rows[0];
+        console.log('업데이트 된 이메일:', { updatedEmail });
+        // 두 플래그가 모두 1인 경우 데이터베이스에서 삭제
+        if (updatedEmail.sender_delete === true && updatedEmail.receiver_delete === true) {
+            await db.query(
+                `DELETE FROM Email WHERE Email_ID = $1`,
+                [email_id]
+            );
+            console.log(`이메일 ${email_id}이(가) 완전히 삭제되었습니다.`);
+        }
+
+        // 성공적으로 처리되었음을 클라이언트에 알림
+        res.redirect('/emails');
+    } catch (err) {
+        console.error('에러 발생:', err);
+        next(err); // 에러 미들웨어로 전달
+    }
+};
+
+exports.renderSendEmailForm = (req, res) => {
+    res.render('sendEmail', { title: '이메일 작성 - TODO' });
+};
+
+exports.sendEmail = async (req, res, next) => {
+    try {
+        const { receiverPhoneNumber, subject, content } = req.body;
+        const senderPhoneNumber = req.user.phone_number; // 로그인된 사용자의 전화번호
+
+        // 입력 값 검증
+        if (!receiverPhoneNumber || !subject || !content) {
+            return res.status(400).send('모든 필드를 입력해주세요.');
+        }
+
+        // Receiver 존재 여부 확인
+        const receiverResult = await db.query(
+            `SELECT phone_number, authority FROM personal_info WHERE phone_number = $1`,
+            [receiverPhoneNumber]
+        );
+
+        if (receiverResult.rows.length === 0) {
+            return res.status(404).send('수신자를 찾을 수 없습니다.');
+        }
+
+        const receiverAuthority = receiverResult.rows[0].authority;
+
+        if (receiverAuthority === 4) {
+            return res.status(403).send('직원이 아닙니다. 이메일을 보낼 수 없습니다.');
+        }
+        // 이메일 생성
+        await db.query(
+            `INSERT INTO Email (Sender_PN, Receiver_PN, Detail, Create_Date, Sender_Delete, Receiver_Delete)
+             VALUES ($1, $2, $3, NOW(), FALSE, FALSE)`,
+            [senderPhoneNumber, receiverPhoneNumber, subject + "\n\n" + content]
+        );
+
+        console.log('이메일 전송 완료:', { senderPhoneNumber, receiverPhoneNumber, subject });
+        res.redirect('/emails');
+    } catch (err) {
+        console.error('에러 발생:', err);
+        next(err);
+    }
+};
 
 exports.renderList = async (req, res, next) => {
     const {

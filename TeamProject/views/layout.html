@@ -28,6 +28,9 @@
             <a id="join" href="/join" class="btn">직원 등록</a>
           {% endif %}
           <a id="join-patient" href="/join-patient" class="btn">환자 등록</a>
+          <!-- 이메일 관련 버튼 추가 -->
+        <a id="view-emails" href="/emails" class="btn">이메일 확인</a>
+        <a id="send-email" href="/send-email" class="btn">이메일 보내기</a>
         {% else %}
           <form id="login-form" action="/auth/login" method="post">
             <div class="input-group">

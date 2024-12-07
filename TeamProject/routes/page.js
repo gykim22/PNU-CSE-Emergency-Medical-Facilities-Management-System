@@ -3,7 +3,8 @@ const { isLoggedIn, isNotLoggedIn } = require('../middlewares');
 const { renderProfile, renderState, renderJoin, renderJoinPatient, renderMain,
     renderList, renderListPatient, renderDeletePatient, renderDeleteStaff,
     renderUpdateStaff, renderUpdatePatient, renderPrescriptionPatient, renderGetPatient,
-    renderWritePrescription, renderDeletePrescription} = require('../controllers/page');
+    renderWritePrescription, renderDeletePrescription, renderEmails, deleteEmail,
+    renderSendEmailForm, sendEmail} = require('../controllers/page');
 const {deletePost} = require("../controllers/post"); // 여기 추가?
 
 const router = express.Router();
@@ -46,6 +47,11 @@ router.get('/mypatient', isLoggedIn, checkAuthority2, renderGetPatient);
 router.post('/writePrescription', isLoggedIn, checkAuthority2, renderWritePrescription);
 router.get('/deletePrescription', isLoggedIn, checkAuthority2, renderDeletePrescription);
 
+// 이메일 관련 라우터 추가
+router.get('/emails', isLoggedIn, renderEmails);
+router.get('/delete-email', isLoggedIn, deleteEmail);
+router.get('/send-email', isLoggedIn, renderSendEmailForm); // 이메일 보내기 페이지
+router.post('/send-email', isLoggedIn, sendEmail); // 이메일 보내기 요청
 router.get('/', renderMain);
 
 module.exports = router;
