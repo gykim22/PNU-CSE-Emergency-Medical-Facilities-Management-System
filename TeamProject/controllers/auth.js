@@ -76,6 +76,7 @@ exports.joinPatient = async (req, res, next) => {
         // 사용자 데이터 삽입
 
         await db.query('INSERT INTO personal_info (phone_number, password, authority) VALUES ($1, $2, $3)', [phone_number, hash, 4]);
+
         if(user_type === "환자")
             await db.query('INSERT INTO patient (name, gender, age, phone_number, next_of_kin, acuity_level, disease, hospitalization_date) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)',
                 [name, gender, age, phone_number, null, acuity, disease, admission_date]);

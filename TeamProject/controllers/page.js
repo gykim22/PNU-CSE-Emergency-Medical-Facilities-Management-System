@@ -205,7 +205,7 @@ exports.renderListPatient = async (req, res, next) => {
             next_of_kin AS "KinNumber",
             acuity_level AS "Acuity",
             disease AS "Disease",
-            hospitalization_date AS "HospitalizationDate"
+            TO_CHAR(hospitalization_date, 'YYYY-MM-DD') AS "HospitalizationDate"
         FROM patient
         ORDER BY ${patientSort} ${patientOrder}`;
 
