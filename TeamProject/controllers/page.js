@@ -1,7 +1,7 @@
 const db = require(process.cwd() + '/models');
 // 수정완료
 exports.renderProfile = (req, res) => {
-    res.render('profile', {title: '내 정보 - TODO'});
+    res.render('profile', {title: '내 정보'});
 };
 
 exports.renderState = async (req, res, next) => {
@@ -375,7 +375,6 @@ exports.renderUpdatePatient = async (req, res, next) => {
         admission_date, // 환자
         relationship, // 보호자
         patient_phone, // 보호자
-
     } = req.body;
 
     if (!phone_number || !gender || !name || !age) {
@@ -430,6 +429,114 @@ exports.renderUpdatePatient = async (req, res, next) => {
             );
         }
         return res.redirect('/list-patient');
+    } catch (err) {
+        console.error(err);
+        next(err);
+    }
+};
+
+exports.renderPrescriptionPatient = async (req, res, next) => {
+    const {
+        patientSort = 'name',
+        patientOrder = 'asc',
+        mySort = 'pt.name',
+        myOrder = 'asc',
+    } = req.query; // 기본값 설정
+
+    const staffPhoneNumber = req.user.phone_number;
+
+    const validSortFields = ['name', 'gender', 'age', 'phone_number', 'next_of_kin', 'acuity_level',
+        'disease', 'hospitalization_date'];
+    const validOrders = ['asc', 'desc'];
+
+    try {
+        // 잘못된 값 방지
+        if (
+            !validSortFields.includes(patientSort) || !validOrders.includes(patientOrder)
+        ) {
+            throw new Error('Invalid sort or order value');
+        }
+
+        let patientQuery;
+        let prescriptionQuery;
+
+        patientQuery =`SELECT
+            name AS "Name",
+            gender AS "Gender",
+            age AS "Age",
+            phone_number AS "PhoneNumber",
+            next_of_kin AS "KinNumber",
+            acuity_level AS "Acuity",
+            disease AS "Disease",
+            TO_CHAR(hospitalization_date, 'YYYY-MM-DD') AS "HospitalizationDate"
+        FROM patient
+        ORDER BY ${patientSort} ${patientOrder}`;
+
+        prescriptionQuery =`SELECT 
+            pt.name AS "PatientName",
+            pt.age AS "PatientAge",
+            pt.gender AS "PatientGender",
+            pt.disease AS "PatientDisease",
+            pt.acuity_level AS "PatientAcuityLevel",
+            d.name AS "DoctorName",
+            p.phone_number As "PhoneNumber",
+            p.prescription AS "Prescription"
+        FROM 
+            prescription p
+        JOIN 
+            patient pt ON p.phone_number = pt.phone_number
+        LEFT JOIN 
+            doctor d ON p.doctor_in_charge = d.phone_number
+        WHERE 
+            p.doctor_in_charge = $1
+        ORDER BY ${mySort} ${myOrder}`;
+
+        // patient 테이블 정렬
+        const patientResult = await db.query(patientQuery);
+        // prescription 테이블 정렬
+        const prescriptionResult = await db.query(prescriptionQuery,[staffPhoneNumber]);
+
+        const patient = patientResult.rows;
+        const prescription = prescriptionResult.rows;
+
+        res.render('prescription', {
+            title: '처방 목록',
+            patient,
+            prescription,
+            currentpatientSort: patientSort,
+            currentpatientOrder: patientOrder,
+            currentmySort: mySort,
+            currentmyOrder: myOrder
+        });
+    } catch (err) {
+        console.error(err);
+        next(err);
+    }
+};
+
+exports.renderGetPatient = async (req, res, next) => {
+    const { phone_number } = req.query;
+    const staffPhoneNumber = req.user.phone_number;
+    try {
+        const isHere = await db.query('SELECT * FROM prescription WHERE phone_number = $1', [phone_number]);
+        if(isHere.rows.length === 0){
+            await db.query('INSERT INTO prescription (phone_number, doctor_in_charge, prescription) VALUES ($1, $2, $3)', [phone_number, staffPhoneNumber, "내용 없음."]);
+        }
+        return res.redirect('/prescription');
+    } catch (err) {
+        console.error(err);
+        next(err);
+    }
+};
+
+exports.renderWritePrescription = async (req, res, next) => {
+    const {
+        phone_number,
+        prescriptionField
+    } = req.body;
+    try {
+        await db.query('UPDATE prescription SET prescription = $1 WHERE phone_number = $2', [prescriptionField, phone_number]);
+        return res.redirect('/prescription');
     } catch (err) {
         console.error(err);
         next(err);

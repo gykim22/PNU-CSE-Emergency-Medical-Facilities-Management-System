@@ -1,0 +1,122 @@
+{% extends 'layout.html' %}
+
+{% block content %}
+<style>
+  table {
+    width: 100%;
+  }
+
+  th, td {
+    padding: 10px;
+    text-align: left;
+  }
+
+  th a {
+    color: inherit;
+  }
+</style>
+<div class="timeline">
+  <h2>전체 환자 목록</h2>
+  <table border="1">
+    <thead>
+    <tr>
+    <tr>
+      <th><a href="/prescription?patientSort=name&patientOrder={{ 'desc' if currentpatientSort == 'name' and currentpatientOrder == 'asc' else 'asc' }}">이름</a></th>
+      <th><a href="/prescription?patientSort=gender&patientOrder={{ 'desc' if currentpatientSort == 'gender' and currentpatientOrder == 'asc' else 'asc' }}">성별</a></th>
+      <th><a href="/prescription?patientSort=age&patientOrder={{ 'desc' if currentpatientSort == 'age' and currentpatientOrder == 'asc' else 'asc' }}">나이</a></th>
+      <th><a href="/prescription?patientSort=phone_number&patientOrder={{ 'desc' if currentpatientSort == 'phone_number' and currentpatientOrder == 'asc' else 'asc' }}">전화번호</a></th>
+      <th><a href="/prescription?patientSort=next_of_kin&patientOrder={{ 'desc' if currentpatientSort == 'next_of_kin' and currentpatientOrder == 'asc' else 'asc' }}">보호자 전화번호</a></th>
+      <th><a href="/prescription?patientSort=acuity_level&patientOrder={{ 'desc' if currentpatientSort == 'acuity_level' and currentpatientOrder == 'asc' else 'asc' }}">위험도</a></th>
+      <th><a href="/prescription?patientSort=disease&patientOrder={{ 'desc' if currentpatientSort == 'disease' and currentpatientOrder == 'asc' else 'asc' }}">병명</a></th>
+      <th><a href="/prescription?patientSort=hospitalization_date&patientOrder={{ 'desc' if currentpatientSort == 'hospitalization_date' and currentpatientOrder == 'asc' else 'asc' }}">입원 일자</a></th>
+      {% if user.authority == "병원장" or user.authority == "전공교수" or user.authority == "의사" %}
+        <th>담당환자 등록</th>
+      {% endif %}
+    </tr>
+    </tr>
+    </thead>
+    <tbody>
+    {% for patient in patient %}
+    <tr>
+      <td>{{ patient.Name }}</td>
+      <td>{{ patient.Gender }}</td>
+      <td>{{ patient.Age }}</td>
+      <td>{{ patient.PhoneNumber }}</td>
+      <td>{{ patient.KinNumber }}</td>
+      <td>{{ patient.Acuity }}</td>
+      <td>{{ patient.Disease }}</td>
+      <td>{{ patient.HospitalizationDate }}</td>
+      {% if user.authority == "병원장" or user.authority == "전공교수" or user.authority == "의사" %}
+        <td>
+          <!-- 등록 버튼 추가 -->
+          <a href="/mypatient?phone_number={{ patient.PhoneNumber }}">등록</a>
+        </td>
+      {% endif %}
+    </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  <h2>담당 환자 목록</h2>
+  <table border="1">
+    <thead>
+    <tr>
+    <tr>
+      <th><a href="/prescription?mySort=pt.name&myOrder={{ 'desc' if currentmySort == 'pt.name' and currentmyOrder == 'asc' else 'asc' }}">이름</a></th>
+      <th><a href="/prescription?mySort=pt.gender&myOrder={{ 'desc' if currentmySort == 'pt.gender' and currentmyOrder == 'asc' else 'asc' }}">성별</a></th>
+      <th><a href="/prescription?mySort=pt.age&myOrder={{ 'desc' if currentmySort == 'pt.age' and currentmyOrder == 'asc' else 'asc' }}">나이</a></th>
+      <th><a href="/prescription?mySort=pt.disease&myOrder={{ 'desc' if currentmySort == 'pt.disease' and currentmyOrder == 'asc' else 'asc' }}">병명</a></th>
+      <th><a href="/prescription?mySort=pt.acuity_level&myOrder={{ 'desc' if currentmySort == 'pt.acuity_level' and currentmyOrder == 'asc' else 'asc' }}">위험도</a></th>
+      <th><a href="/prescription?mySort=d.name&myOrder={{ 'desc' if currentmySort == 'd.name' and currentmyOrder == 'asc' else 'asc' }}">담당의</a></th>
+      <th><a href="/prescription?mySort=p.prescription&myOrder={{ 'desc' if currentmySort == 'p.prescription' and currentmyOrder == 'asc' else 'asc' }}">[ㅤㅤㅤㅤㅤㅤㅤ처방 내역ㅤㅤㅤㅤㅤㅤㅤ]</a></th>
+      <th>처방</th>
+    </tr>
+    </tr>
+    </thead>
+    <tbody>
+    {% for prescription in prescription %}
+    <tr>
+      <td>{{ prescription.PatientName }}</td>
+      <td>{{ prescription.PatientAge }}</td>
+      <td>{{ prescription.PatientGender }}</td>
+      <td>{{ prescription.PatientDisease }}</td>
+      <td>{{ prescription.PatientAcuityLevel }}</td>
+      <td>{{ prescription.DoctorName }}</td>
+      <td>{{ prescription.Prescription }}</td>
+      <td>
+        <input type="radio" name="selected" value="{{ prescription.PhoneNumber}}" onclick="showEditFields('{{ prescription.PhoneNumber}}')">
+      </td>
+    </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  <!-- 수정 필드가 나타나는 부분 -->
+  <div id="editFields" style="display:none;">
+    <h3>처방전 작성</h3>
+    <form action="/writePrescription" method="post">
+      <input type="hidden" id="PhoneNumber" name="phone_number">
+      <div class="input-group" id="join-relation">
+
+        <textarea id="pre-prescription"
+                  style="width:500px; height:200px; padding:10px; box-sizing:border-box; resize:none;"
+                  maxlength="300"
+                  name="prescriptionField"
+                  placeholder="300자 이내로 작성"
+                  required></textarea>
+      </div>
+      <button id="join-btn" type="submit" class="btn">작성</button>
+    </form>
+  </div>
+</div>
+<a id="back" href="/" class="btn">뒤로가기</a>
+{% endblock %}
+
+{% block script %}
+<script>
+  function showEditFields(phoneNumber) {
+    // 공통 필드 설정
+    document.getElementById('PhoneNumber').value = phoneNumber;
+    // 수정 필드 섹션 표시
+    document.getElementById('editFields').style.display = 'block';
+  }
+</script>
+{% endblock%}

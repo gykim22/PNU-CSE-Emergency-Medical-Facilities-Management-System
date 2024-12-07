@@ -30,8 +30,8 @@
           <th><a href="/list-patient?patientSort=acuity_level&patientOrder={{ 'desc' if currentpatientSort == 'acuity_level' and currentpatientOrder == 'asc' else 'asc' }}">위험도</a></th>
           <th><a href="/list-patient?patientSort=disease&patientOrder={{ 'desc' if currentpatientSort == 'disease' and currentpatientOrder == 'asc' else 'asc' }}">병명</a></th>
           <th><a href="/list-patient?patientSort=hospitalization_date&patientOrder={{ 'desc' if currentpatientSort == 'hospitalization_date' and currentpatientOrder == 'asc' else 'asc' }}">입원 일자</a></th>
-          <th>삭제</th> <!-- 삭제 버튼을 위한 열 추가 -->
           <th>수정</th>
+          <th>삭제</th>
         </tr>
         </tr>
         </thead>
@@ -47,11 +47,11 @@
           <td>{{ patient.Disease }}</td>
           <td>{{ patient.HospitalizationDate }}</td>
           <td>
-            <!-- 삭제 버튼 추가 -->
-            <a href="/delete-patient?phone_number={{ patient.PhoneNumber }}">삭제</a>
+            <input type="radio" name="selected" value="{{ patient.PhoneNumber }}" onclick="showEditFields('{{ patient.PhoneNumber }}', '환자')">
           </td>
           <td>
-            <input type="radio" name="selected" value="{{ patient.PhoneNumber }}" onclick="showEditFields('{{ patient.PhoneNumber }}', '환자')">
+            <!-- 삭제 버튼 추가 -->
+            <a href="/delete-patient?phone_number={{ patient.PhoneNumber }}">삭제</a>
           </td>
         </tr>
         {% endfor %}
@@ -69,8 +69,8 @@
           <th><a href="/list-patient?kinSort=patient_relationship&kinOrder={{ 'desc' if currentkinSort == 'patient_relationship' and currentkinOrder == 'asc' else 'asc' }}">관계</a></th>
           <th><a href="/list-patient?kinSort=patient_name&kinOrder={{ 'desc' if currentkinSort == 'patient_name' and currentkinOrder == 'asc' else 'asc' }}">환자 이름</a></th>
           <th><a href="/list-patient?kinSort=patient_phonenumber&kinOrder={{ 'desc' if currentkinSort == 'patient_phonenumber' and currentkinOrder == 'asc' else 'asc' }}">환자 전화번호</a></th>
-          <th>삭제</th> <!-- 삭제 버튼을 위한 열 추가 -->
           <th>수정</th>
+          <th>삭제</th>
         </tr>
         </tr>
         </thead>
@@ -85,11 +85,11 @@
           <td>{{ kin.PatientName }}</td>
           <td>{{ kin.PatientPhoneNumber }}</td>
           <td>
-            <!-- 삭제 버튼 추가 -->
-            <a href="/delete-kin?phone_number={{ kin.PhoneNumber }}">삭제</a>
+            <input type="radio" name="selected" value="{{ kin.PhoneNumber }}" onclick="showEditFields('{{ kin.PhoneNumber }}', '보호자')">
           </td>
           <td>
-            <input type="radio" name="selected" value="{{ kin.PhoneNumber }}" onclick="showEditFields('{{ kin.PhoneNumber }}', '보호자')">
+            <!-- 삭제 버튼 추가 -->
+            <a href="/delete-kin?phone_number={{ kin.PhoneNumber }}">삭제</a>
           </td>
         </tr>
         {% endfor %}

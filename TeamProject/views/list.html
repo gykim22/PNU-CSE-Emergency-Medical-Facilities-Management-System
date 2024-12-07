@@ -33,8 +33,8 @@
           <th><a href="/list?doctorSort=phone_number&doctorOrder={{ 'desc' if currentDoctorSort == 'phone_number' and currentDoctorOrder == 'asc' else 'asc' }}">전화번호</a></th>
           <th><a href="/list?doctorSort=department&doctorOrder={{ 'desc' if currentDoctorSort == 'department' and currentDoctorOrder == 'asc' else 'asc' }}">전공</a></th>
           {% if user.authority == "병원장" %}
-            <th>삭제</th>
             <th>수정</th>
+            <th>삭제</th>
           {% endif %}
           </th>
         </tr>
@@ -54,11 +54,11 @@
           <td>{{ doctor.Department }}</td>
           {% if user.authority == "병원장" %}
             <td>
-              <!-- 삭제 버튼 추가 -->
-              <a href="/delete-staff?phone_number={{ doctor.PhoneNumber }}">삭제</a>
+              <input type="radio" name="selected" value="{{ doctor.PhoneNumber }}" onclick="showEditFields('{{ doctor.PhoneNumber }}', '{{ doctor.Role }}')">
             </td>
             <td>
-              <input type="radio" name="selected" value="{{ doctor.PhoneNumber }}" onclick="showEditFields('{{ doctor.PhoneNumber }}', '{{ doctor.Role }}')">
+              <!-- 삭제 버튼 추가 -->
+              <a href="/delete-staff?phone_number={{ doctor.PhoneNumber }}">삭제</a>
             </td>
           {% endif %}
         </tr>
@@ -80,8 +80,8 @@
           <th><a href="/list?nurseSort=age&nurseOrder={{ 'desc' if currentNurseSort == 'age' and currentNurseOrder == 'asc' else 'asc' }}">나이</a></th>
           <th><a href="/list?nurseSort=phone_number&nurseOrder={{ 'desc' if currentNurseSort == 'phone_number' and currentNurseOrder == 'asc' else 'asc' }}">전화번호</a></th>
           {% if user.authority == "병원장" %}
-            <th>삭제</th>
             <th>수정</th>
+            <th>삭제</th>
           {% endif %}
         </tr>
         </tr>
@@ -100,11 +100,11 @@
           <td>{{ nurse.PhoneNumber }}</td>
           {% if user.authority == "병원장" %}
             <td>
-              <!-- 삭제 버튼 추가 -->
-              <a href="/delete-staff?phone_number={{ nurse.PhoneNumber }}">삭제</a>
+              <input type="radio" name="selected" value="{{ nurse.PhoneNumber }}" onclick="showEditFields('{{ nurse.PhoneNumber }}', '{{ nurse.Role }}')">
             </td>
             <td>
-              <input type="radio" name="selected" value="{{ nurse.PhoneNumber }}" onclick="showEditFields('{{ nurse.PhoneNumber }}', '{{ nurse.Role }}')">
+              <!-- 삭제 버튼 추가 -->
+              <a href="/delete-staff?phone_number={{ nurse.PhoneNumber }}">삭제</a>
             </td>
           {% endif %}
         </tr>
