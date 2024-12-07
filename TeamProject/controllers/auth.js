@@ -92,7 +92,6 @@ exports.joinPatient = async (req, res, next) => {
     }
 };
 
-
 exports.login = (req, res, next) => {
     passport.authenticate('local', (authErr, user, info) => {
         if (authErr) {

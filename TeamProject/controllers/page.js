@@ -205,7 +205,7 @@ exports.renderListPatient = async (req, res, next) => {
             next_of_kin AS "KinNumber",
             acuity_level AS "Acuity",
             disease AS "Disease",
-            hospitalization_date AS "HospitalizationDate"
+            TO_CHAR(hospitalization_date, 'YYYY-MM-DD') AS "HospitalizationDate"
         FROM patient
         ORDER BY ${patientSort} ${patientOrder}`;
 
@@ -286,6 +286,150 @@ exports.renderDeletePatient = async (req, res, next) => {
 
         // 삭제 후 환자 목록 페이지로 리디렉션
         res.redirect('/list-patient');
+    } catch (err) {
+        console.error(err);
+        next(err);
+    }
+};
+
+exports.renderUpdateStaff = async (req, res, next) => {
+    const {
+        phone_number,
+        user_type,
+        authority_type,
+        gender,
+        year,
+        salary,
+        name,
+        age,
+        department // nurse는 제외.
+    } = req.body;
+
+    if (!phone_number || !authority_type || !gender || !year || !salary || !name || !age) {
+        return res.status(400).send('필수 항목이 누락되었습니다.');
+    }
+
+    try {
+        let role;
+        if(authority_type === "0")
+            role = "병원장";
+        else if(authority_type === "1")
+            role = "전공교수";
+        else if (authority_type === "2")
+            role = "수간호사";
+        else if (authority_type === "3") {
+            if(user_type === "의사")
+                role = "의사";
+            else
+                role = "간호사";
+        }
+        if(user_type === "의사" || user_type === "전공교수" || user_type === "병원장"){
+            await db.query(`UPDATE doctor 
+                SET 
+                    role = $1, 
+                    year = $2, 
+                    salary = $3, 
+                    state = $4, 
+                    name = $5, 
+                    gender = $6, 
+                    age = $7,
+                    phone_number = $8,
+                    department = $9  
+                WHERE phone_number = $10
+                `,
+                [role, year, salary, "출근", name, gender, age, phone_number, department, phone_number]
+            );
+        }
+        else {
+            await db.query(`UPDATE nurse
+                SET 
+                    role = $1, 
+                    year = $2, 
+                    salary = $3, 
+                    state = $4, 
+                    name = $5, 
+                    gender = $6, 
+                    age = $7,
+                    phone_number = $8
+                WHERE phone_number = $9
+                `,
+                [role, year, salary, "출근", name, gender, age, phone_number, phone_number]
+            );
+        }
+        await db.query('UPDATE personal_info SET authority = $1 WHERE phone_number = $2', [authority_type, phone_number]);
+        return res.redirect('/list');
+    } catch (err) {
+        console.error(err);
+        next(err);
+    }
+};
+
+exports.renderUpdatePatient = async (req, res, next) => {
+    const {
+        phone_number,
+        name,
+        age,
+        gender,
+        acuity, // 환자
+        disease, // 환자
+        admission_date, // 환자
+        relationship, // 보호자
+        patient_phone, // 보호자
+
+    } = req.body;
+
+    if (!phone_number || !gender || !name || !age) {
+        return res.status(400).send('필수 항목이 누락되었습니다.');
+    }
+
+    try {
+        const Result = await db.query('SELECT * FROM patient WHERE phone_number = $1', [phone_number]);
+        if(Result.rows.length > 0){
+            await db.query(`UPDATE patient 
+                SET 
+                    name= $1, 
+                    gender = $2, 
+                    age = $3, 
+                    acuity_level = $4, 
+                    disease = $5, 
+                    hospitalization_date = $6  
+                WHERE phone_number = $7
+                `,
+                [name, gender, age, acuity, disease, admission_date, phone_number]
+            );
+        }
+        else {
+            const p_name = await db.query('SELECT name FROM patient WHERE phone_number = $1', [patient_phone]);
+            if(p_name.rows.length === 0){
+                return res.status(400).send('본 병원에 해당 환자는 없습니다.');
+            }
+            const tmp = await db.query('SELECT name FROM patient WHERE next_of_kin = $1', [phone_number]);
+            if(tmp.rows.length === 1){
+                await db.query(`UPDATE patient 
+                SET next_of_kin = $1 
+                WHERE next_of_kin = $2`, [null, phone_number]);
+            }
+
+            await db.query(`UPDATE next_of_kin 
+                SET 
+                    nok_name= $1, 
+                    gender = $2, 
+                    age = $3, 
+                    patient_relationship = $4, 
+                    patient_name = $5,
+                    patient_phonenumber = $6 
+                WHERE phone_number = $7
+                `,
+                [name, gender, age, relationship, p_name.rows[0].name, patient_phone, phone_number]
+            );
+            await db.query(`UPDATE patient 
+                SET 
+                    next_of_kin = $1 WHERE phone_number = $2
+                `,
+                [phone_number, patient_phone]
+            );
+        }
+        return res.redirect('/list-patient');
     } catch (err) {
         console.error(err);
         next(err);

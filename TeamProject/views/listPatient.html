@@ -2,11 +2,6 @@
 
 {% block content %}
 <style>
-  .table-container {
-    overflow-x: auto;
-
-  }
-
   table {
     width: 100%;
   }
@@ -14,7 +9,6 @@
   th, td {
     padding: 10px;
     text-align: left;
-
   }
 
   th a {
@@ -33,10 +27,11 @@
           <th><a href="/list-patient?patientSort=age&patientOrder={{ 'desc' if currentpatientSort == 'age' and currentpatientOrder == 'asc' else 'asc' }}">나이</a></th>
           <th><a href="/list-patient?patientSort=phone_number&patientOrder={{ 'desc' if currentpatientSort == 'phone_number' and currentpatientOrder == 'asc' else 'asc' }}">전화번호</a></th>
           <th><a href="/list-patient?patientSort=next_of_kin&patientOrder={{ 'desc' if currentpatientSort == 'next_of_kin' and currentpatientOrder == 'asc' else 'asc' }}">보호자 전화번호</a></th>
-          <th><a href="/list-patient?patientSort=acuity_level&patientOrder={{ 'desc' if currentpatientSort == 'acuity_level' and currentpatientOrder == 'asc' else 'asc' }}">중증도</a></th>
-          <th><a href="/list-patient?patientSort=disease&patientOrder={{ 'desc' if currentpatientSort == 'disease' and currentpatientOrder == 'asc' else 'asc' }}">질병</a></th>
+          <th><a href="/list-patient?patientSort=acuity_level&patientOrder={{ 'desc' if currentpatientSort == 'acuity_level' and currentpatientOrder == 'asc' else 'asc' }}">위험도</a></th>
+          <th><a href="/list-patient?patientSort=disease&patientOrder={{ 'desc' if currentpatientSort == 'disease' and currentpatientOrder == 'asc' else 'asc' }}">병명</a></th>
           <th><a href="/list-patient?patientSort=hospitalization_date&patientOrder={{ 'desc' if currentpatientSort == 'hospitalization_date' and currentpatientOrder == 'asc' else 'asc' }}">입원 일자</a></th>
           <th>삭제</th> <!-- 삭제 버튼을 위한 열 추가 -->
+          <th>수정</th>
         </tr>
         </tr>
         </thead>
@@ -55,6 +50,9 @@
             <!-- 삭제 버튼 추가 -->
             <a href="/delete-patient?phone_number={{ patient.PhoneNumber }}">삭제</a>
           </td>
+          <td>
+            <input type="radio" name="selected" value="{{ patient.PhoneNumber }}" onclick="showEditFields('{{ patient.PhoneNumber }}', '환자')">
+          </td>
         </tr>
         {% endfor %}
         </tbody>
@@ -72,6 +70,7 @@
           <th><a href="/list-patient?kinSort=patient_name&kinOrder={{ 'desc' if currentkinSort == 'patient_name' and currentkinOrder == 'asc' else 'asc' }}">환자 이름</a></th>
           <th><a href="/list-patient?kinSort=patient_phonenumber&kinOrder={{ 'desc' if currentkinSort == 'patient_phonenumber' and currentkinOrder == 'asc' else 'asc' }}">환자 전화번호</a></th>
           <th>삭제</th> <!-- 삭제 버튼을 위한 열 추가 -->
+          <th>수정</th>
         </tr>
         </tr>
         </thead>
@@ -89,12 +88,91 @@
             <!-- 삭제 버튼 추가 -->
             <a href="/delete-kin?phone_number={{ kin.PhoneNumber }}">삭제</a>
           </td>
+          <td>
+            <input type="radio" name="selected" value="{{ kin.PhoneNumber }}" onclick="showEditFields('{{ kin.PhoneNumber }}', '보호자')">
+          </td>
         </tr>
         {% endfor %}
         </tbody>
       </table>
-      <a id="back" href="/" class="btn">뒤로가기</a>
+    </div>
+    <!-- 수정 필드가 나타나는 부분 -->
+    <div id="editFields" style="display:none;">
+      <h3>해당 환자 | 보호자 정보 수정</h3>
+      <form action="/update-patient" method="post">
+        <input type="hidden" id="PhoneNumber" name="phone_number">
+        <div class="input-group">
+          <label for="join-gender">성별</label>
+          <select id="join-gender" name="gender" required>
+            <option value="M">남성</option>
+            <option value="F">여성</option>
+          </select>
+        </div>
+        <div class="input-group">
+          <label for="join-name">이름</label>
+          <input id="join-name" type="text" name="name" placeholder="OOO" required>
+        </div>
+        <div class="input-group">
+          <label for="join-age">나이</label>
+          <input id="join-age" type="text" name="age" placeholder="예: (35살이면) 35" required>
+        </div>
+        <!-- 환자에 해당하는 필드 -->
+        <div class="input-group" id="join-acu" style="display: none;">
+          <label for="join-acuity">위험도</label>
+          <input id="join-acuity" type="text" name="acuity" placeholder="예: 1 - 5 중 입력. 1:경증 | 5:중증">
+        </div>
+        <div class="input-group" id="join-dis" style="display: none;">
+          <label for="join-disease">병명</label>
+          <input id="join-disease" type="text" name="disease" placeholder="예: 독감 | 코로나">
+        </div>
+        <div class="input-group" id="join-ad-date" style="display: none;">
+          <label for="join-admission-date">입원 날짜</label>
+          <input id="join-admission-date" type="date" name="admission_date">
+        </div>
+
+        <!-- 보호자에 해당하는 필드 -->
+        <div class="input-group" id="join-relation" style="display: none;">
+          <label for="join-relationship">환자와의 관계</label>
+          <input id="join-relationship" type="text" name="relationship" placeholder="예: 부모, 배우자 등">
+        </div>
+        <div class="input-group" id="join-p-phone" style="display: none;">
+          <label for="join-patient-phone">환자 전화번호</label>
+          <input id="join-patient-phone" type="text" name="patient_phone" placeholder="환자 전화번호">
+        </div>
+        <button id="join-btn" type="submit" class="btn">수정</button>
+      </form>
     </div>
   </div>
+<a id="back" href="/" class="btn">뒤로가기</a>
 {% endblock %}
 
+{% block script %}
+<script>
+  function showEditFields(phoneNumber, role) {
+    // 공통 필드 설정
+    document.getElementById('PhoneNumber').value = phoneNumber;
+
+    // 공통 필드는 항상 표시되므로 추가 조치 불필요
+
+    // 추가 필드 모두 숨기기
+    document.getElementById('join-acu').style.display = 'none'; // 위험도
+    document.getElementById('join-dis').style.display = 'none'; // 병명
+    document.getElementById('join-ad-date').style.display = 'none'; // 입원 날짜
+    document.getElementById('join-relation').style.display = 'none'; // 환자와의 관계
+    document.getElementById('join-p-phone').style.display = 'none'; // 환자 전화번호
+
+    // 역할(role)에 따라 필요한 필드 표시
+    if (role === '환자') {
+      document.getElementById('join-acu').style.display = 'block'; // 위험도
+      document.getElementById('join-dis').style.display = 'block'; // 병명
+      document.getElementById('join-ad-date').style.display = 'block'; // 입원 날짜
+    } else if (role === '보호자') {
+      document.getElementById('join-relation').style.display = 'block'; // 환자와의 관계
+      document.getElementById('join-p-phone').style.display = 'block'; // 환자 전화번호
+    }
+
+    // 수정 필드 섹션 표시
+    document.getElementById('editFields').style.display = 'block';
+  }
+</script>
+{% endblock%}

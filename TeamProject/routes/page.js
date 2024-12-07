@@ -1,6 +1,8 @@
 const express = require('express');
 const { isLoggedIn, isNotLoggedIn } = require('../middlewares');
-const { renderProfile, renderState, renderJoin, renderJoinPatient, renderMain,  renderList, renderListPatient, renderDeletePatient, renderDeleteStaff} = require('../controllers/page');
+const { renderProfile, renderState, renderJoin, renderJoinPatient, renderMain,
+    renderList, renderListPatient, renderDeletePatient, renderDeleteStaff,
+    renderUpdateStaff, renderUpdatePatient} = require('../controllers/page');
 const {deletePost} = require("../controllers/post"); // 여기 추가?
 
 const router = express.Router();
@@ -36,6 +38,9 @@ router.get('/list-patient', isLoggedIn, renderListPatient);
 router.get('/delete-patient', isLoggedIn, renderDeletePatient);
 router.get('/delete-kin', isLoggedIn, renderDeletePatient);
 router.get('/delete-staff', isLoggedIn, checkAuthority1, renderDeleteStaff);
+router.post('/update-staff', isLoggedIn, checkAuthority1, renderUpdateStaff);
+router.post('/update-patient', isLoggedIn, checkAuthority2, renderUpdatePatient);
+
 router.get('/', renderMain);
 
 module.exports = router;
