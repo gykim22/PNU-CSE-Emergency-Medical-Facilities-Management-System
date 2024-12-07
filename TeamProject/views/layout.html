@@ -13,21 +13,25 @@
         <div class="profile">
           {% if user and user.phone_number %}
             <div class="user-name">{{'안녕하세요! ' + user.name +' '+ user.authority + '님'}}</div>
-            <div class="half">
-              <div>담당 환자 수</div>
-              <div class="count following-count">{{count}}</div>
-            </div>
-            <div class="half">
-              <div>상태</div>
-              <div class="count follower-count">{{user.state}}</div>
-            </div>
+            {% if user.authority != "환자" and user.authority != "보호자" %}
+              <div class="half">
+                <div>담당 환자 수</div>
+                <div class="count following-count">{{count}}</div>
+              </div>
+              <div class="half">
+                <div>상태</div>
+                <div class="count follower-count">{{user.state}}</div>
+              </div>
+            {% endif %}
           <input id="my-id" type="hidden" value="{{user.phone_number}}">
           <a id="my-profile" href="/profile" class="btn">내 프로필</a>
           <a id="logout" href="/auth/logout" class="btn">로그아웃</a>
           {% if user.authority == "병원장" %}
             <a id="join" href="/join" class="btn">직원 등록</a>
           {% endif %}
-          <a id="join-patient" href="/join-patient" class="btn">환자 등록</a>
+          {% if user.authority != "환자" and user.authority != "보호자" %}
+            <a id="join-patient" href="/join-patient" class="btn">환자 등록</a>
+          {% endif %}
         {% else %}
           <form id="login-form" action="/auth/login" method="post">
             <div class="input-group">

@@ -24,9 +24,9 @@ module.exports = () => {
                         user = await db.query('SELECT phone_number, name, state, role AS authority FROM Nurse WHERE phone_number = $1', [phone_number]);
                     }
                 } else { // 환자|보호자
-                    user = await db.query('SELECT phone_number, name, state, role AS authority FROM Doctor WHERE phone_number = $1', [phone_number]);
+                    user = await db.query('SELECT phone_number, name, role AS authority FROM patient WHERE phone_number = $1', [phone_number]);
                     if (user.rows.length === 0)
-                        user = await db.query('SELECT phone_number, name, state, role AS authority FROM Nurse WHERE phone_number = $1', [phone_number]);
+                        user = await db.query('SELECT phone_number, name, role AS authority FROM next_of_kin WHERE phone_number = $1', [phone_number]);
                 }
                 done(null, user.rows[0]);
             } else done(null);

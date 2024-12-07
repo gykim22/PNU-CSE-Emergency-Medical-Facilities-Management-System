@@ -17,8 +17,8 @@
 </style>
   <div class="timeline">
     <div class="followings half">
+      {% if user and user.authority != "환자" and user.authority != "보호자" %}
       <h2>프로필 설정</h2>
-      {% if user %}
         <form id="state-form" action="/profile/state" method="POST">
           <select id="join-authority-type" name="state" required>
             <option value="출근">출근</option>
@@ -27,8 +27,63 @@
           <button type="submit" class="btn">저장</button>
         </form>
       {% endif %}
+      {% if user and user.authority == "환자" %}
+        <h2>환자 정보</h2>
+          <table border="1">
+            <thead>
+            <tr>
+            <tr>
+              <th>이름</th>
+              <th>나이</th>
+              <th>성별</th>
+              <th>병명</th>
+              <th>입원일자</th>
+            </tr>
+            </tr>
+            </thead>
+            <tbody>
+            {% for prescription in pre %}
+            <tr>
+              <td>{{ prescription.patient_name }}</td>
+              <td>{{ prescription.patient_age }}</td>
+              <td>{{ prescription.patient_gender }}</td>
+              <td>{{ prescription.patient_disease }}</td>
+              <td>{{ prescription.patient_hospitalization_date }}</td>
+            </tr>
+            {% endfor %}
+            </tbody>
+          </table>
+      {% endif %}
+      {% if user and user.authority == "보호자" %}
+      <h2>내 환자 정보</h2>
+      <table border="1">
+        <thead>
+        <tr>
+        <tr>
+          <th>이름</th>
+          <th>나이</th>
+          <th>성별</th>
+          <th>병명</th>
+          <th>입원일자</th>
+        </tr>
+        </tr>
+        </thead>
+        <tbody>
+        {% for prescription in kin %}
+        <tr>
+          <td>{{ prescription.patient_name }}</td>
+          <td>{{ prescription.patient_age }}</td>
+          <td>{{ prescription.patient_gender }}</td>
+          <td>{{ prescription.patient_disease }}</td>
+          <td>{{ prescription.patient_hospitalization_date }}</td>
+        </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+      {% endif %}
     </div>
     <div class="followers half">
+      {% if user and user.authority != "환자" and user.authority != "보호자" %}
       <h2>담당환자 목록</h2>
       <table border="1">
         <thead>
@@ -56,6 +111,28 @@
         {% endfor %}
         </tbody>
       </table>
+      {% endif %}
+      {% if user and user.authority == "환자" %}
+        <h2>환자 처방</h2>
+        <table border="1">
+          <thead>
+          <tr>
+          <tr>
+            <th>담당의</th>
+            <th>내 처방전</th>
+          </tr>
+          </tr>
+          </thead>
+          <tbody>
+          {% for prescription in pre %}
+          <tr>
+            <td>{{ prescription.doctor_name }}</td>
+            <td>{{ prescription.prescription }}</td>
+          </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+      {% endif %}
     </div>
   </div>
 <a id="back" href="/" class="btn">뒤로가기</a>

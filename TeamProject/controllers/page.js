@@ -6,8 +6,6 @@ exports.renderProfile = async (req, res, next) => {
         myOrder = 'asc',
     } = req.query; // 기본값 설정
 
-
-
     const staffPhoneNumber = req.user.phone_number;
     let count = await db.query('SELECT * FROM prescription WHERE doctor_in_charge = $1', [staffPhoneNumber]);
     count = count.rows.length;
@@ -16,22 +14,62 @@ exports.renderProfile = async (req, res, next) => {
             pt.name AS "PatientName",
             p.phone_number AS "patientPhoneNumber",
             pt.age AS "PatientAge",
+            d.name AS "DoctorName",
             pt.gender AS "PatientGender",
             pt.disease AS "PatientDisease",
-            pt.acuity_level AS "PatientAcuityLevel"
+            pt.acuity_level AS "PatientAcuityLevel",
+            p.prescription AS "PatientPrescription"
         FROM 
             prescription p
         JOIN 
             patient pt ON p.phone_number = pt.phone_number
+        LEFT JOIN 
+            doctor d ON p.doctor_in_charge = d.phone_number
         WHERE 
             p.doctor_in_charge = $1
         ORDER BY ${mySort} ${myOrder}`;
     try {
         const prescriptionResult = await db.query(prescriptionQuery, [staffPhoneNumber]);
+        const patientResult = await db.query(`
+            SELECT 
+                p.prescription AS prescription, 
+                p.doctor_in_charge, 
+                d.name AS doctor_name,
+                pt.name AS patient_name,
+                pt.age AS patient_age,
+                pt.gender AS patient_gender,
+                pt.disease AS patient_disease,
+                TO_CHAR(pt.hospitalization_date, 'YYYY-MM-DD') AS patient_hospitalization_date
+            FROM 
+                prescription p
+            LEFT JOIN 
+                doctor d ON p.doctor_in_charge = d.phone_number
+            LEFT JOIN 
+                patient pt ON p.phone_number = pt.phone_number
+            WHERE 
+                p.phone_number = $1
+        `, [staffPhoneNumber]);
+
+        const kinResult = await db.query(`
+            SELECT 
+                pt.name AS patient_name,
+                pt.age AS patient_age,
+                pt.gender AS patient_gender,
+                pt.disease AS patient_disease,
+                TO_CHAR(pt.hospitalization_date, 'YYYY-MM-DD') AS patient_hospitalization_date
+            FROM 
+                patient pt
+            WHERE 
+                pt.next_of_kin = $1
+        `, [staffPhoneNumber]);
         const prescription = prescriptionResult.rows;
+        const pre = patientResult.rows;
+        const kin = kinResult.rows;
         res.render('profile', {
             title: '내 정보',
             prescription,
+            pre,
+            kin,
             count,
             currentmySort: mySort,
             currentmyOrder: myOrder
@@ -220,7 +258,7 @@ exports.renderListPatient = async (req, res, next) => {
     const {
         patientSort = 'name',
         patientOrder = 'asc',
-        kinSort = 'nok_name',
+        kinSort = 'name',
         kinOrder = 'asc',
     } = req.query; // 기본값 설정
 
@@ -232,7 +270,7 @@ exports.renderListPatient = async (req, res, next) => {
         count = count.rows.length;
     }
 
-    const validSortFields = ['name', 'nok_name', 'gender', 'age', 'phone_number', 'next_of_kin', 'acuity_level',
+    const validSortFields = ['name', 'name', 'gender', 'age', 'phone_number', 'next_of_kin', 'acuity_level',
         'disease', 'hospitalization_date', 'patient_relationship', 'patient_name', 'patient_phonenumber'];
     const validOrders = ['asc', 'desc'];
 
@@ -261,7 +299,7 @@ exports.renderListPatient = async (req, res, next) => {
         ORDER BY ${patientSort} ${patientOrder}`;
 
         kinQuery = `SELECT
-            nok_name AS "Name",
+            name AS "Name",
             gender AS "Gender",
             age AS "Age",
             phone_number AS "PhoneNumber",
@@ -461,7 +499,7 @@ exports.renderUpdatePatient = async (req, res, next) => {
 
             await db.query(`UPDATE next_of_kin 
                 SET 
-                    nok_name= $1, 
+                    name= $1, 
                     gender = $2, 
                     age = $3, 
                     patient_relationship = $4, 
