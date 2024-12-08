@@ -54,12 +54,12 @@
           <td>{{ doctor.Age }}</td>
           <td>{{ doctor.PhoneNumber }}</td>
           <td>{{ doctor.Department }}</td>
-          {% if user.authority == "병원장" or (user.authority == "전공교수" and user.department == doctor.Department and doctor.Role == "의사" )%}
+          {% if user.authority == "병원장" and doctor.Role !="병원장" or (user.authority == "전공교수" and user.department == doctor.Department and doctor.Role == "의사" )%}
             <td>
               <input type="radio" name="selected" value="{{ doctor.PhoneNumber }}" onclick="showEditFields('{{ doctor.PhoneNumber }}', '{{ doctor.Role }}','{{ doctor.Salary }}', '{{user.authority}}')">
             </td>
           {% endif %}
-          {% if user.authority == "병원장" %}
+          {% if user.authority == "병원장"  and doctor.Role !="병원장" %}
           <td>
               <!-- 삭제 버튼 추가 -->
               <a href="/delete-staff?phone_number={{ doctor.PhoneNumber }}">삭제</a>
@@ -104,7 +104,7 @@
           <td>{{ nurse.Gender }}</td>
           <td>{{ nurse.Age }}</td>
           <td>{{ nurse.PhoneNumber }}</td>
-          {% if (user.authority == "병원장" or user.authority == "수간호사") and nurse.Role !="수간호사" %}
+          {% if user.authority == "병원장" or (user.authority == "수간호사" and nurse.Role !="수간호사") %}
             <td>
               <input type="radio" name="selected" value="{{ nurse.PhoneNumber }}" onclick="showEditFields('{{ nurse.PhoneNumber }}', '{{ nurse.Role }}','{{ nurse.Salary }}', '{{user.authority}}')">
             </td>

@@ -534,6 +534,12 @@ exports.renderUpdatePatient = async (req, res, next) => {
                 `,
                 [name, gender, age, acuity, disease, admission_date, phone_number]
             ); // 수정된 정보를 환자 테이블의 해당 인물에게 업데이트
+
+            let isKin = await db.query(`SELECT * FROM next_of_kin WHERE patient_phonenumber = $1`, [phone_number]);
+            if(isKin.rows.length > 0) {
+                await db.query(`UPDATE next_of_kin SET patient_name = $1 WHERE patient_phonenumber = $2`, [name, phone_number]);
+            }
+
         } else { // 보호자라면,
             const p_name = await db.query('SELECT name FROM patient WHERE phone_number = $1', [patient_phone]);
 
