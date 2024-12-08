@@ -42,15 +42,15 @@
             </tr>
             </thead>
             <tbody>
-            {% for prescription in pre %}
+
             <tr>
-              <td>{{ prescription.patient_name }}</td>
-              <td>{{ prescription.patient_age }}</td>
-              <td>{{ prescription.patient_gender }}</td>
-              <td>{{ prescription.patient_disease }}</td>
-              <td>{{ prescription.patient_hospitalization_date }}</td>
+              <td>{{ user.name }}</td>
+              <td>{{ user.age }}</td>
+              <td>{{ user.gender }}</td>
+              <td>{{ user.disease }}</td>
+              <td id="hospitalization-date">{{ user.hospitalization_date }}</td>
             </tr>
-            {% endfor %}
+
             </tbody>
           </table>
       {% endif %}
@@ -83,7 +83,7 @@
       {% endif %}
     </div>
     <div class="followers half">
-      {% if user and user.authority != "환자" and user.authority != "보호자" %}
+      {% if user and user.authority == "병원장" or user.authority == "전공교수" or user.authority == "의사" %}
       <h2>담당환자 목록</h2>
       <table border="1">
         <thead>
@@ -136,4 +136,15 @@
     </div>
   </div>
 <a id="back" href="/" class="btn">뒤로가기</a>
+{% endblock %}
+
+{% block script%}
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    const dateCell = document.getElementById('hospitalization-date');
+    const rawDate = dateCell.textContent.trim(); // 원래 날짜 문자열
+    const formattedDate = new Date(rawDate).toISOString().split('T')[0]; // YYYY-MM-DD 변환
+    dateCell.textContent = formattedDate;
+  });
+</script>
 {% endblock %}

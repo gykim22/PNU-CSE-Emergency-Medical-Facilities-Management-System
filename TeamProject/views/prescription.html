@@ -16,7 +16,7 @@
   }
 </style>
 <div class="timeline">
-  <h2>전체 환자 목록</h2>
+  <h2>전담의 미배정 환자 목록</h2>
   <table border="1">
     <thead>
     <tr>
@@ -56,7 +56,12 @@
     {% endfor %}
     </tbody>
   </table>
-  <h2>담당 환자 목록</h2>
+  {% if user and user.authority == "병원장" or user.authority == "전공교수" or user.authority == "의사" %}
+    <h2>담당 환자 목록</h2>
+  {% endif %}
+  {% if user and user.authority == "수간호사" or user.authority == "간호사" %}
+  <h2>환자별 처방 내역</h2>
+  {% endif %}
   <table border="1">
     <thead>
     <tr>
@@ -68,8 +73,10 @@
       <th><a href="/prescription?mySort=pt.acuity_level&myOrder={{ 'desc' if currentmySort == 'pt.acuity_level' and currentmyOrder == 'asc' else 'asc' }}">위험도</a></th>
       <th><a href="/prescription?mySort=d.name&myOrder={{ 'desc' if currentmySort == 'd.name' and currentmyOrder == 'asc' else 'asc' }}">담당의</a></th>
       <th><a href="/prescription?mySort=p.prescription&myOrder={{ 'desc' if currentmySort == 'p.prescription' and currentmyOrder == 'asc' else 'asc' }}">[ㅤㅤㅤㅤㅤ처방 내역ㅤㅤㅤㅤㅤ]</a></th>
-      <th>처방</th>
-      <th>철회</th>
+      {% if user.authority == "병원장" or user.authority == "전공교수" or user.authority == "의사" %}
+        <th>처방</th>
+        <th>철회</th>
+      {% endif %}
     </tr>
     </tr>
     </thead>
@@ -83,12 +90,14 @@
       <td>{{ prescription.PatientAcuityLevel }}</td>
       <td>{{ prescription.DoctorName }}</td>
       <td>{{ prescription.Prescription }}</td>
+      {% if user.authority == "병원장" or user.authority == "전공교수" or user.authority == "의사" %}
       <td>
         <input type="radio" name="selected" value="{{ prescription.PhoneNumber}}" onclick="showEditFields('{{ prescription.PhoneNumber}}')">
       </td>
       <td>
         <a href="/deletePrescription?phone_number={{ prescription.PhoneNumber }}">철회</a>
       </td>
+      {% endif %}
     </tr>
     {% endfor %}
     </tbody>

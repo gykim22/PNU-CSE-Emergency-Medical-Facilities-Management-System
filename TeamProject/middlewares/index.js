@@ -1,5 +1,3 @@
-//수정할 것 없음.
-
 exports.isLoggedIn = (req, res, next) => {
     if (req.isAuthenticated()) {
         next();

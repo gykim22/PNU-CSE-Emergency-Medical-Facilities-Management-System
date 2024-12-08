@@ -71,13 +71,18 @@
     document.addEventListener('DOMContentLoaded', () => {
       const userTypeSelect = document.getElementById('join-user-type');
       const departmentGroup = document.getElementById('join-department-group');
+      const authorityTypeSelect = document.getElementById('join-authority-type');
 
       // 사용자 타입이 바뀔 때마다 실행되는 이벤트
       userTypeSelect.addEventListener('change', () => {
         if (userTypeSelect.value === '의사') {
           departmentGroup.style.display = 'block';  // 의사를 선택하면 전공 입력란 보이기
+          authorityTypeSelect.querySelector('option[value="1"]').disabled = false;
+          authorityTypeSelect.querySelector('option[value="2"]').disabled = true;
         } else {
           departmentGroup.style.display = 'none';   // 다른 항목을 선택하면 전공 입력란 숨기기
+          authorityTypeSelect.querySelector('option[value="1"]').disabled = true;
+          authorityTypeSelect.querySelector('option[value="2"]').disabled = false;
         }
       });
 

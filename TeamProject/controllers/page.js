@@ -365,13 +365,17 @@ exports.renderDeletePatient = async (req, res, next) => {
 
     try {
         const Result = await db.query('SELECT * FROM patient WHERE phone_number = $1', [phone_number]);
+        let kinNum;
         if (Result.rows.length > 0) {
+            kinNum = await db.query('SELECT next_of_kin FROM patient WHERE phone_number = $1', [phone_number]);
+            kinNum = kinNum.rows[0].next_of_kin;
             await db.query('DELETE FROM patient WHERE phone_number = $1', [phone_number]);
         } else {
             await db.query('UPDATE patient SET next_of_kin = $1 WHERE next_of_kin = $2', [null, phone_number]);
             await db.query('DELETE FROM next_of_kin WHERE phone_number = $1', [phone_number]);
         }
-
+        if(kinNum)
+            await db.query('DELETE FROM personal_info WHERE phone_number = $1', [kinNum]);
         await db.query('DELETE FROM personal_info WHERE phone_number = $1', [phone_number]);
 
         // 삭제 후 환자 목록 페이지로 리디렉션
@@ -383,7 +387,7 @@ exports.renderDeletePatient = async (req, res, next) => {
 };
 
 exports.renderUpdateStaff = async (req, res, next) => {
-    const {
+    let {
         phone_number,
         user_type,
         authority_type,
@@ -395,8 +399,14 @@ exports.renderUpdateStaff = async (req, res, next) => {
         department // nurse는 제외.
     } = req.body;
 
-    if (!phone_number || !authority_type || !gender || !year || !salary || !name || !age) {
+    if (!phone_number || !authority_type || !gender || !year || !name || !age) {
         return res.status(400).send('필수 항목이 누락되었습니다.');
+    }
+
+    if(!salary){
+        let salaryData = await db.query(`SELECT salary FROM doctor WHERE phone_number = $1`, [phone_number]);
+        salary = salaryData.rows[0].salary;
+        console.log(salary);
     }
 
     try {
@@ -533,7 +543,6 @@ exports.renderPrescriptionPatient = async (req, res, next) => {
 
     const staffPhoneNumber = req.user.phone_number;
 
-
     let count = await db.query('SELECT * FROM prescription WHERE doctor_in_charge = $1', [staffPhoneNumber]);
     count = count.rows.length;
 
@@ -562,10 +571,33 @@ exports.renderPrescriptionPatient = async (req, res, next) => {
             acuity_level AS "Acuity",
             disease AS "Disease",
             TO_CHAR(hospitalization_date, 'YYYY-MM-DD') AS "HospitalizationDate"
-        FROM patient
+        FROM patient p
+        WHERE NOT EXISTS (
+            SELECT *
+            FROM prescription
+            WHERE prescription.phone_number = p.phone_number
+        )
         ORDER BY ${patientSort} ${patientOrder}`;
 
-        prescriptionQuery = `SELECT 
+        if(req.user.authority === "간호사" || req.user.authority === "수간호사") {
+                prescriptionQuery = `SELECT 
+                pt.name AS "PatientName",
+                pt.age AS "PatientAge",
+                pt.gender AS "PatientGender",
+                pt.disease AS "PatientDisease",
+                pt.acuity_level AS "PatientAcuityLevel",
+                d.name AS "DoctorName",
+                p.phone_number As "PhoneNumber",
+                p.prescription AS "Prescription"
+            FROM 
+                prescription p
+            JOIN 
+                patient pt ON p.phone_number = pt.phone_number
+            LEFT JOIN 
+                doctor d ON p.doctor_in_charge = d.phone_number
+            ORDER BY ${mySort} ${myOrder}`;
+        } else {
+            prescriptionQuery = `SELECT 
             pt.name AS "PatientName",
             pt.age AS "PatientAge",
             pt.gender AS "PatientGender",
@@ -583,11 +615,17 @@ exports.renderPrescriptionPatient = async (req, res, next) => {
         WHERE 
             p.doctor_in_charge = $1
         ORDER BY ${mySort} ${myOrder}`;
+        }
+
 
         // patient 테이블 정렬
         const patientResult = await db.query(patientQuery);
+        let prescriptionResult;
         // prescription 테이블 정렬
-        const prescriptionResult = await db.query(prescriptionQuery, [staffPhoneNumber]);
+        if(req.user.authority === "간호사" || req.user.authority === "수간호사")
+            prescriptionResult = await db.query(prescriptionQuery);
+        else
+            prescriptionResult = await db.query(prescriptionQuery, [staffPhoneNumber]);
 
         const patient = patientResult.rows;
         const prescription = prescriptionResult.rows;
@@ -614,8 +652,6 @@ exports.renderGetPatient = async (req, res, next) => {
     try {
         const isHere = await db.query('SELECT * FROM prescription WHERE phone_number = $1', [phone_number]);
         const isMax = await db.query('SELECT * FROM prescription WHERE doctor_in_charge = $1', [staffPhoneNumber]);
-        console.log("숫자:" + isMax.rows.length);
-        console.log("존재:" + isHere.rows.length);
         if (isHere.rows.length === 0 && isMax.rows.length < 5) {
             await db.query('INSERT INTO prescription (phone_number, doctor_in_charge, prescription) VALUES ($1, $2, $3)', [phone_number, staffPhoneNumber, "내용 없음."]);
         }

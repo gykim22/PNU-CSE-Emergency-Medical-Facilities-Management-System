@@ -1,5 +1,5 @@
 const { Pool } = require('pg')
-//수정완료
+
 const pool = new Pool(
     {
         host: 'localhost',

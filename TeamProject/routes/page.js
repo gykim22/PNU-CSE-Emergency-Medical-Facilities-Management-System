@@ -5,7 +5,6 @@ const { renderProfile, renderState, renderJoin, renderJoinPatient, renderMain,
     renderUpdateStaff, renderUpdatePatient, renderPrescriptionPatient, renderGetPatient,
     renderWritePrescription, renderDeletePrescription, renderEmails, deleteEmail,
     renderSendEmailForm, sendEmail} = require('../controllers/page');
-const {deletePost} = require("../controllers/post"); // 여기 추가?
 
 const router = express.Router();
 
@@ -40,7 +39,7 @@ router.get('/list-patient', isLoggedIn, renderListPatient);
 router.get('/delete-patient', isLoggedIn, renderDeletePatient);
 router.get('/delete-kin', isLoggedIn, renderDeletePatient);
 router.get('/delete-staff', isLoggedIn, checkAuthority1, renderDeleteStaff);
-router.post('/update-staff', isLoggedIn, checkAuthority1, renderUpdateStaff);
+router.post('/update-staff', isLoggedIn, checkAuthority2, renderUpdateStaff);
 router.post('/update-patient', isLoggedIn, checkAuthority2, renderUpdatePatient);
 router.get('/prescription', isLoggedIn, checkAuthority2, renderPrescriptionPatient);
 router.get('/mypatient', isLoggedIn, checkAuthority2, renderGetPatient);

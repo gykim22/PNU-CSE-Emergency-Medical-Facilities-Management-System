@@ -32,8 +32,10 @@
           <th><a href="/list?doctorSort=age&doctorOrder={{ 'desc' if currentDoctorSort == 'age' and currentDoctorOrder == 'asc' else 'asc' }}">나이</a></th>
           <th><a href="/list?doctorSort=phone_number&doctorOrder={{ 'desc' if currentDoctorSort == 'phone_number' and currentDoctorOrder == 'asc' else 'asc' }}">전화번호</a></th>
           <th><a href="/list?doctorSort=department&doctorOrder={{ 'desc' if currentDoctorSort == 'department' and currentDoctorOrder == 'asc' else 'asc' }}">전공</a></th>
-          {% if user.authority == "병원장" %}
+          {% if user.authority == "병원장" or user.authority == "전공교수"%}
             <th>수정</th>
+          {% endif %}
+          {% if user.authority == "병원장" %}
             <th>삭제</th>
           {% endif %}
           </th>
@@ -52,11 +54,13 @@
           <td>{{ doctor.Age }}</td>
           <td>{{ doctor.PhoneNumber }}</td>
           <td>{{ doctor.Department }}</td>
-          {% if user.authority == "병원장" %}
+          {% if user.authority == "병원장" or (user.authority == "전공교수" and user.department == doctor.Department and doctor.Role == "의사" )%}
             <td>
-              <input type="radio" name="selected" value="{{ doctor.PhoneNumber }}" onclick="showEditFields('{{ doctor.PhoneNumber }}', '{{ doctor.Role }}')">
+              <input type="radio" name="selected" value="{{ doctor.PhoneNumber }}" onclick="showEditFields('{{ doctor.PhoneNumber }}', '{{ doctor.Role }}','{{ doctor.Salary }}', '{{user.authority}}')">
             </td>
-            <td>
+          {% endif %}
+          {% if user.authority == "병원장" %}
+          <td>
               <!-- 삭제 버튼 추가 -->
               <a href="/delete-staff?phone_number={{ doctor.PhoneNumber }}">삭제</a>
             </td>
@@ -100,7 +104,7 @@
           <td>{{ nurse.PhoneNumber }}</td>
           {% if user.authority == "병원장" %}
             <td>
-              <input type="radio" name="selected" value="{{ nurse.PhoneNumber }}" onclick="showEditFields('{{ nurse.PhoneNumber }}', '{{ nurse.Role }}')">
+              <input type="radio" name="selected" value="{{ nurse.PhoneNumber }}" onclick="showEditFields('{{ nurse.PhoneNumber }}', '{{ nurse.Role }}','{{ nurse.Salary }}', '{{user.authority}}')">
             </td>
             <td>
               <!-- 삭제 버튼 추가 -->
@@ -121,7 +125,6 @@
         <div>
           <label for="join-authority-type">사용자 권한</label>
           <select id="join-authority-type" name="authority_type" required>
-            <option value="0">병원장</option>
             <option value="1">전공 교수</option>
             <option value="2">수간호사</option>
             <option value="3">의사|간호사</option>
@@ -138,9 +141,9 @@
           <label for="newYear">연차:</label>
           <input type="text" id="newYear" name="year" placeholder="예: (6년차면) 6" required>
         </div>
-        <div>
+        <div id="salary-field">
           <label for="newSalary">연봉:</label>
-          <input type="text" id="newSalary" name="salary" placeholder="예: (1.2억이면) 1.2" required>
+          <input type="text" id="newSalary" name="salary" placeholder="예: (1.2억이면) 1.2">
         </div>
         <div>
           <label for="newName">이름:</label>
@@ -163,19 +166,31 @@
 
 {% block script %}
 <script>
-  function showEditFields(phoneNumber, role) {
+  function showEditFields(phoneNumber, role, salary, user_authority) {
     document.getElementById('PhoneNumber').value = phoneNumber;
     document.getElementById('UserType').value = role;
     const authorityTypeSelect = document.getElementById('join-authority-type');
     const departmentField = document.getElementById('newDepartment');
+    const salaryField = document.getElementById("salary-field");
+
+    if(user_authority === "병원장"){
+      salaryField.style.display = "block"; // 보이게
+      if(role !== "간호사" || role !== "수간호사")
+        authorityTypeSelect.querySelector('option[value="2"]').disabled = true;
+      else
+        authorityTypeSelect.querySelector('option[value="2"]').disabled = false;
+    } else if(user_authority === "전공교수") {
+      salaryField.style.display = "none"; // 숨기기
+      authorityTypeSelect.querySelector('option[value="2"]').disabled = true;
+      salaryField.value = salary;
+    }
 
     if (role === '간호사' || role === '수간호사') {
       departmentField.style.display = 'none';
-      authorityTypeSelect.querySelector('option[value="0"]').disabled = true;  // "병원장" 옵션 숨기기
       authorityTypeSelect.querySelector('option[value="1"]').disabled = true;  // "전공 교수" 옵션 숨기기
+      authorityTypeSelect.querySelector('option[value="2"]').disabled = false;
     } else {
       departmentField.style.display = 'block';
-      authorityTypeSelect.querySelector('option[value="0"]').disabled = false;  // "병원장" 옵션 숨기기
       authorityTypeSelect.querySelector('option[value="1"]').disabled = false;  // "전공 교수" 옵션 활성화
     }
     document.getElementById('editFields').style.display = 'block';
