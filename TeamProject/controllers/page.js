@@ -1,15 +1,18 @@
 const db = require(process.cwd() + '/models');
-// 수정완료
+
+// 프로필 페이지를 랜더링하는 모듈
 exports.renderProfile = async (req, res, next) => {
-    const {
-        mySort = 'pt.name',
-        myOrder = 'asc',
-    } = req.query; // 기본값 설정
+    const { // 정렬 기준
+        mySort = 'pt.name',     // 기본 정렬 필드 기준 == 이름
+        myOrder = 'asc',        // 오름차순
+    } = req.query;                      // 기본값 설정
 
-    const staffPhoneNumber = req.user.phone_number;
+    const staffPhoneNumber = req.user.phone_number; // 랜더링을 요청하는 로그인 된 사용자의 전화번호 데이터
+    // [의사직군] 처방 테이블로부터 자신이 담당하는 환자 row를 가져오기 위한 query.
     let count = await db.query('SELECT * FROM prescription WHERE doctor_in_charge = $1', [staffPhoneNumber]);
-    count = count.rows.length;
+    count = count.rows.length; // [의사직군] 자신이 담당하는 환자의 수
 
+    // [의사직군] 자신이 담당하는 환자의 정보를 프로필에 띄우기 위해 데이터를 가져오는 쿼리
     let prescriptionQuery = `SELECT 
             pt.name AS "PatientName",
             p.phone_number AS "patientPhoneNumber",
@@ -26,10 +29,12 @@ exports.renderProfile = async (req, res, next) => {
         LEFT JOIN 
             doctor d ON p.doctor_in_charge = d.phone_number
         WHERE 
-            p.doctor_in_charge = $1
+            p.doctor_in_charge = $1  -- [의사직군] 자신이 담당하는 환자의 정보를 가져오기 위해 비교
         ORDER BY ${mySort} ${myOrder}`;
     try {
-        const prescriptionResult = await db.query(prescriptionQuery, [staffPhoneNumber]);
+        const prescriptionResult = await db.query(prescriptionQuery, [staffPhoneNumber]); // [의사직군] 자신이 담당하는 환자의 정보를 가져오기 위해 비교
+        // [환자] 프로필 페이지 랜더링 요청이 환자로부터 들어올 경우, 자신의 프로필 및 전담의, 처방전을 확인할 수 있도록
+        // 정보를 요청하는 쿼리
         const patientResult = await db.query(`
             SELECT 
                 p.prescription AS prescription, 
@@ -48,8 +53,9 @@ exports.renderProfile = async (req, res, next) => {
                 patient pt ON p.phone_number = pt.phone_number
             WHERE 
                 p.phone_number = $1
-        `, [staffPhoneNumber]);
+        `, [staffPhoneNumber]); // [환자] 여기서의 staffPhoneNumber에는 프로필 페이지 랜더링을 요청한 환자의 번호가 들어있음.
 
+        // [보호자] 프로필 페이지 랜더링 요청이 환자로부터 들어올 경우, 자신의 환자 프로필을 확인할 수 있도록 정보를 요청하는 쿼리
         const kinResult = await db.query(`
             SELECT 
                 pt.name AS patient_name,
@@ -62,17 +68,19 @@ exports.renderProfile = async (req, res, next) => {
             WHERE 
                 pt.next_of_kin = $1
         `, [staffPhoneNumber]);
+
         const prescription = prescriptionResult.rows;
         const pre = patientResult.rows;
         const kin = kinResult.rows;
+
         res.render('profile', {
             title: '내 정보',
-            prescription,
-            pre,
-            kin,
-            count,
-            currentmySort: mySort,
-            currentmyOrder: myOrder
+            prescription,   // 보호자용 처방 데이터
+            pre,            // 의사 | 환자 용 프로필 데이터
+            kin,            // 보호자 용 프로필 데이터
+            count,          // 의사 용 전담 환자 명수
+            currentmySort: mySort,  // 현재 sorting 정보
+            currentmyOrder: myOrder // 현재 정렬 방법 정보 asc, desc
         });
     } catch (err) {
         console.error(err);
@@ -82,19 +90,20 @@ exports.renderProfile = async (req, res, next) => {
 
 };
 
+// 레이아웃에 출퇴근 상태를 출력하는 모듈
 exports.renderState = async (req, res, next) => {
     const {state} = req.body; // 클라이언트에서 받은 출퇴근 상태
-    const phoneNumber = req.user.phone_number; // 로그인된 사용자 ID
+    const phoneNumber = req.user.phone_number; // 현재 로그인된 사용자 ID
     try {
-        // doctor 테이블에서 존재 여부 확인
+        // doctor 테이블에서 해당 전화번호 존재 여부 확인
         const doctorResult = await db.query('SELECT * FROM doctor WHERE phone_number = $1', [phoneNumber]);
-        if (doctorResult.rows.length > 0) {
-            // doctor 테이블에서 업데이트
+        if (doctorResult.rows.length > 0) { // 있다면,
+            // doctor 테이블에서 해당 인물을 찾아 출근 정보(state) 업데이트
             await db.query('UPDATE doctor SET state = $1 WHERE phone_number = $2', [state, phoneNumber]);
-        } else
+        } else // 없다면 해당 사용자는 의사가 아닌, 간호사 직군이므로, nurse 테이블에서 해당 인물을 찾아 출근 정보(state)를 업데이트 함
             await db.query('UPDATE nurse SET state = $1 WHERE phone_number = $2', [state, phoneNumber]);
 
-        // 상태 업데이트 후 성공 페이지로 리다이렉트
+        // 상태 업데이트 후 기존 프로필 페이지로 리다이렉트
         res.redirect('/profile');
     } catch (error) {
         console.error(error);
@@ -102,40 +111,46 @@ exports.renderState = async (req, res, next) => {
     }
 };
 
+// 직원 등록 페이지 랜더링 모듈
 exports.renderJoin = async (req, res) => {
     let staffPhoneNumber;
     let count;
-    if(req.user) {
-        staffPhoneNumber = req.user.phone_number;
+    if(req.user) {  // [의사직군] 로그인 된 상태라면, 레이아웃의 담당 환자 수에 환자 명수를 출력하기 위한 데이터를 요청하는 쿼리
+                    // join페이지와 실질적인 관계는 없으나, layout 페이지가 항상 표시되므로, 해당 레이아웃에 담당 환자 명수 출력을 위한 코드.
+        staffPhoneNumber = req.user.phone_number;   // 해당 인물 전화번호
         count = await db.query('SELECT * FROM prescription WHERE doctor_in_charge = $1', [staffPhoneNumber]);
-        count = count.rows.length;
+        count = count.rows.length;  // 해당 사용자(의사)가 돌보고 있는 환자 수
     }
-    res.render('join', {title: '직원 등록 - TODO', count});
+    res.render('join', {title: '직원 등록', count});
 };
 
+// 환자 등록 페이지 랜더링 모듈
 exports.renderJoinPatient = async (req, res) => {
     let staffPhoneNumber;
     let count;
-    if(req.user) {
+    if(req.user) {  // [의사직군] 로그인 된 상태라면, 레이아웃의 담당 환자 수에 환자 명수를 출력하기 위한 데이터를 요청하는 쿼리
+                    // join-patient 페이지와 실질적인 관계는 없으나, layout 페이지가 항상 표시되므로, 해당 레이아웃에 담당 환자 명수 출력을 위한 코드.
         staffPhoneNumber = req.user.phone_number;
         count = await db.query('SELECT * FROM prescription WHERE doctor_in_charge = $1', [staffPhoneNumber]);
         count = count.rows.length;
     }
-    res.render('joinPatient', {title: '환자 등록 - TODO',
+    res.render('joinPatient', {title: '환자 등록',
         count});
 };
 
+// 메인 페이지 랜더링 모듈
 exports.renderMain = async (req, res, next) => {
     try {
         let staffPhoneNumber;
         let count;
-        if(req.user) {
+        if(req.user) {  // [의사직군] 로그인 된 상태라면, 레이아웃의 담당 환자 수에 환자 명수를 출력하기 위한 데이터를 요청하는 쿼리
+                        // main 페이지와 실질적인 관계는 없으나, layout 페이지가 항상 표시되므로, 해당 레이아웃에 담당 환자 명수 출력을 위한 코드.
             staffPhoneNumber = req.user.phone_number;
             count = await db.query('SELECT * FROM prescription WHERE doctor_in_charge = $1', [staffPhoneNumber]);
             count = count.rows.length;
         }
-        res.render('main', {
-            title: 'TODO',
+        res.render('main', { // 메인 페이지 랜더링
+            title: '메인 페이지',
             count
         });
     } catch (err) {
@@ -144,28 +159,29 @@ exports.renderMain = async (req, res, next) => {
     }
 };
 
-
+// 직원 리스트 페이지 랜더링 모듈
 exports.renderList = async (req, res, next) => {
-    const {
+    const {     // 헤더 클릭 시 정렬 기능을 위한 변수모음.
         doctorSort = 'id',
         doctorOrder = 'asc',
         nurseSort = 'id',
         nurseOrder = 'asc',
-    } = req.query; // 기본값 설정
+    } = req.query; // 쿼리로 부터 정렬 기준 및 방식 assign.
 
     const validSortFields = ['id', 'role', 'year', 'salary', 'state', 'name', 'gender', 'age', 'phone_number', 'department'];
     const validOrders = ['asc', 'desc'];
 
     let staffPhoneNumber;
     let count;
-    if(req.user) {
+    if(req.user) {  // [의사직군] 로그인 된 상태라면, 레이아웃의 담당 환자 수에 환자 명수를 출력하기 위한 데이터를 요청하는 쿼리
+                    // 직원 리스트 페이지와 실질적인 관계는 없으나, layout 페이지가 항상 표시되므로, 해당 레이아웃에 담당 환자 명수 출력을 위한 코드.
         staffPhoneNumber = req.user.phone_number;
         count = await db.query('SELECT * FROM prescription WHERE doctor_in_charge = $1', [staffPhoneNumber]);
         count = count.rows.length;
     }
 
     try {
-        // 잘못된 값 방지
+        // 잘못된 기준 값 assign 방지
         if (
             !validSortFields.includes(doctorSort) || !validOrders.includes(doctorOrder) ||
             !validSortFields.includes(nurseSort) || !validOrders.includes(nurseOrder)
@@ -178,7 +194,8 @@ exports.renderList = async (req, res, next) => {
         console.log(isAdmin);
         let doctorQuery;
         let nurseQuery;
-        if (isAdmin) {
+        if (isAdmin) { // 직원 리스트 페이지를 열람하는 사용자가 "병원장"일 경우, 아래 쿼리 활용
+            // 의사 리스트 쿼리. salary를 포함한 모든 데이터를 가져옴.
             doctorQuery = `SELECT
                 id AS "ID",
                 role AS "Role",
@@ -192,6 +209,7 @@ exports.renderList = async (req, res, next) => {
                 department AS "Department"
             FROM Doctor
             ORDER BY ${doctorSort} ${doctorOrder}`;
+            // 간호사 리스트 쿼리. salary를 포함한 모든 데이터를 가져옴.
             nurseQuery = `SELECT
                 id AS "ID",
                 role AS "Role",
@@ -204,7 +222,9 @@ exports.renderList = async (req, res, next) => {
                 phone_number AS "PhoneNumber"
             FROM Nurse
             ORDER BY ${nurseSort} ${nurseOrder}`;
-        } else {
+
+        } else { // 직원 페이지를 열람하는 사용자가 "병원장"이 아닌, "의사 | 간호사 | 전공교수 | 수간호사"일 경우
+            // 의사 리스트 쿼리. salary를 제외한 모든 데이터를 가져옴.
             doctorQuery = `SELECT
                 id AS "ID",
                 role AS "Role",
@@ -217,6 +237,8 @@ exports.renderList = async (req, res, next) => {
                 department AS "Department"
             FROM Doctor
             ORDER BY ${doctorSort} ${doctorOrder}`;
+
+            // 간호사 리스트 쿼리. salary를 제외한 모든 데이터를 가져옴.
             nurseQuery = `SELECT
                 id AS "ID",
                 role AS "Role",
@@ -238,11 +260,11 @@ exports.renderList = async (req, res, next) => {
 
         const doctor = doctorResult.rows;
         const nurse = nurseResult.rows;
-        res.render('list', {
+        res.render('list', { // 리스트 페이지 랜더링
             title: '직원 목록',
-            doctor,
-            nurse,
-            count,
+            doctor,     // 의사 리스트 데이터
+            nurse,      // 간호사 리스트 데이터
+            count,      // [의사]레이아웃에 표시될 담담 환자 수
             currentDoctorSort: doctorSort,
             currentDoctorOrder: doctorOrder,
             currentNurseSort: nurseSort,
@@ -254,17 +276,19 @@ exports.renderList = async (req, res, next) => {
     }
 };
 
+// 환자 리스트 페이지 랜더링
 exports.renderListPatient = async (req, res, next) => {
-    const {
-        patientSort = 'name',
-        patientOrder = 'asc',
+    const {         // 헤더 클릭 시 정렬 기능을 위한 변수모음.
+        patientSort = 'acuity_level', // 위험도 기준으로 선정렬
+        patientOrder = 'desc',
         kinSort = 'name',
         kinOrder = 'asc',
-    } = req.query; // 기본값 설정
+    } = req.query; // 쿼리로 부터 정렬 기준 및 방식 assign.
 
     let staffPhoneNumber;
     let count;
-    if(req.user) {
+    if(req.user) {  // [의사직군] 로그인 된 상태라면, 레이아웃의 담당 환자 수에 환자 명수를 출력하기 위한 데이터를 요청하는 쿼리
+                    // 직원 리스트 페이지와 실질적인 관계는 없으나, layout 페이지가 항상 표시되므로, 해당 레이아웃에 담당 환자 명수 출력을 위한 코드.
         staffPhoneNumber = req.user.phone_number;
         count = await db.query('SELECT * FROM prescription WHERE doctor_in_charge = $1', [staffPhoneNumber]);
         count = count.rows.length;
@@ -285,7 +309,7 @@ exports.renderListPatient = async (req, res, next) => {
 
         let patientQuery;
         let kinQuery;
-
+        // 환자 리스트 데이터를 요청하기 위한 쿼리
         patientQuery = `SELECT
             name AS "Name",
             gender AS "Gender",
@@ -298,6 +322,7 @@ exports.renderListPatient = async (req, res, next) => {
         FROM patient
         ORDER BY ${patientSort} ${patientOrder}`;
 
+        // 보호자 리스트 데이터를 요청하기 위한 쿼리
         kinQuery = `SELECT
             name AS "Name",
             gender AS "Gender",
@@ -319,9 +344,9 @@ exports.renderListPatient = async (req, res, next) => {
         const kin = kinResult.rows;
         res.render('listPatient', {
             title: '환자|보호자 목록',
-            patient,
-            kin,
-            count,
+            patient,    // 환자 리스트 데이터
+            kin,        // 보호자 리스트 데이터
+            count,      // [의사]레이아웃에 표시될 담담 환자 수
             currentpatientSort: patientSort,
             currentpatientOrder: patientOrder,
             currentkinSort: kinSort,
@@ -333,20 +358,21 @@ exports.renderListPatient = async (req, res, next) => {
     }
 };
 
+// 직원 삭제 기능 모듈
 exports.renderDeleteStaff = async (req, res, next) => {
-    const {phone_number} = req.query; // phone_number 파라미터를 쿼리에서 가져옵니다.
+    const {phone_number} = req.query; // 삭제하고자 하는 직원의 번호를 파라미터로부터 가져옴.
 
     if (!phone_number)
         return res.status(400).send("전화번호가 제공되지 않았습니다.");
 
-    try {
+    try {       // 해당 직원이 의사인지, 간호사인지 판별하는 구문
         const Result = await db.query('SELECT * FROM doctor WHERE phone_number = $1', [phone_number]);
-        if (Result.rows.length > 0) {
-            await db.query('DELETE FROM doctor WHERE phone_number = $1', [phone_number]);
-        } else {
-            await db.query('DELETE FROM nurse WHERE phone_number = $1', [phone_number]);
+        if (Result.rows.length > 0) { // 만약 의사라면,
+            await db.query('DELETE FROM doctor WHERE phone_number = $1', [phone_number]); // 의사 테이블에서 해당인물 삭제
+        } else {    // 간호사라면,
+            await db.query('DELETE FROM nurse WHERE phone_number = $1', [phone_number]); // 간호사 테이블에서 해당인물 삭제
         }
-
+        // personal_info 테이블에서 최종적으로 해당인물 삭제
         await db.query('DELETE FROM personal_info WHERE phone_number = $1', [phone_number]);
 
         // 삭제 후 직원 목록 페이지로 리디렉션
@@ -357,26 +383,27 @@ exports.renderDeleteStaff = async (req, res, next) => {
     }
 };
 
+//환자 삭제 기능 모듈
 exports.renderDeletePatient = async (req, res, next) => {
-    const {phone_number} = req.query; // phone_number 파라미터를 쿼리에서 가져옵니다.
+    const {phone_number} = req.query; // 삭제할 환자의 전화번호를 쿼리에서 가져옴.
 
     if (!phone_number)
         return res.status(400).send("전화번호가 제공되지 않았습니다.");
 
-    try {
+    try {   // 해당 인물이 환자인지, 보호자인지 판별하는 구문.
         const Result = await db.query('SELECT * FROM patient WHERE phone_number = $1', [phone_number]);
         let kinNum;
-        if (Result.rows.length > 0) {
+        if (Result.rows.length > 0) {   // 환자라면,
             kinNum = await db.query('SELECT next_of_kin FROM patient WHERE phone_number = $1', [phone_number]);
-            kinNum = kinNum.rows[0].next_of_kin;
-            await db.query('DELETE FROM patient WHERE phone_number = $1', [phone_number]);
-        } else {
-            await db.query('UPDATE patient SET next_of_kin = $1 WHERE next_of_kin = $2', [null, phone_number]);
-            await db.query('DELETE FROM next_of_kin WHERE phone_number = $1', [phone_number]);
+            kinNum = kinNum.rows[0].next_of_kin;    // 환자에게 연결된 보호자가 있다면, 해당 보호자의 전화번호 저장
+            await db.query('DELETE FROM patient WHERE phone_number = $1', [phone_number]); // 환자 테이블에서 해당인물 삭제
+        } else {    // 보호자라면,
+            await db.query('UPDATE patient SET next_of_kin = $1 WHERE next_of_kin = $2', [null, phone_number]); // 환자 테이블에서 보호자 전화번호 삭제
+            await db.query('DELETE FROM next_of_kin WHERE phone_number = $1', [phone_number]); // 보호자 테이블에서 해당인물 삭제
         }
-        if(kinNum)
-            await db.query('DELETE FROM personal_info WHERE phone_number = $1', [kinNum]);
-        await db.query('DELETE FROM personal_info WHERE phone_number = $1', [phone_number]);
+        if(kinNum)  // 환자 삭제 시, 해당 환자에게 등록된 보호자가 존재한다면,
+            await db.query('DELETE FROM personal_info WHERE phone_number = $1', [kinNum]);  // personal_info에서 보호자 정보 삭제
+        await db.query('DELETE FROM personal_info WHERE phone_number = $1', [phone_number]); // personal_info에서 해당 인물 삭제.
 
         // 삭제 후 환자 목록 페이지로 리디렉션
         res.redirect('/list-patient');
@@ -386,8 +413,9 @@ exports.renderDeletePatient = async (req, res, next) => {
     }
 };
 
+// 직원 정보 수정 기능 모듈
 exports.renderUpdateStaff = async (req, res, next) => {
-    let {
+    let {   // 쿼리로부터 해당 인물의 수정된 데이터 정보를 받아옴.
         phone_number,
         user_type,
         authority_type,
@@ -396,20 +424,24 @@ exports.renderUpdateStaff = async (req, res, next) => {
         salary,
         name,
         age,
-        department // nurse는 제외.
+        department // nurse는 해당 필드가 없으므로 제외함.
     } = req.body;
 
     if (!phone_number || !authority_type || !gender || !year || !name || !age) {
         return res.status(400).send('필수 항목이 누락되었습니다.');
     }
 
-    if(!salary){
+    if(!salary){    // 병원장이 아닌 사람이 수정했을 시, 연봉 필드가 누락되어 입력되므로
         let salaryData = await db.query(`SELECT salary FROM doctor WHERE phone_number = $1`, [phone_number]);
-        salary = salaryData.rows[0].salary;
-        console.log(salary);
+        if(salaryData.rows.length > 0) {
+            salary = salaryData.rows[0].salary; // 해당 인물이 의사라면, 해당 인물의 연봉 정보를 DB에서 읽어와 기존 그대로 적용
+        } else {
+            salaryData = await db.query(`SELECT salary FROM nurse WHERE phone_number = $1`, [phone_number]);
+            salary = salaryData.rows[0].salary; // 해당 인물이 간호사라면, 해당 인물의 연봉 정보를 DB에서 읽어와 기존 그대로 적용
+        }
     }
 
-    try {
+    try {   // 권한에 따른 role 정보 부여
         let role;
         if (authority_type === "0")
             role = "병원장";
@@ -423,6 +455,8 @@ exports.renderUpdateStaff = async (req, res, next) => {
             else
                 role = "간호사";
         }
+
+        // 수정하고자 하는 인물이 의사 직군이라면,
         if (user_type === "의사" || user_type === "전공교수" || user_type === "병원장") {
             await db.query(`UPDATE doctor 
                 SET 
@@ -438,8 +472,9 @@ exports.renderUpdateStaff = async (req, res, next) => {
                 WHERE phone_number = $10
                 `,
                 [role, year, salary, "출근", name, gender, age, phone_number, department, phone_number]
-            );
-        } else {
+            );  // 수정된 데이터를 DB에 적용.
+
+        } else { // 간호사 직군이라면,
             await db.query(`UPDATE nurse
                 SET 
                     role = $1, 
@@ -453,9 +488,12 @@ exports.renderUpdateStaff = async (req, res, next) => {
                 WHERE phone_number = $9
                 `,
                 [role, year, salary, "출근", name, gender, age, phone_number, phone_number]
-            );
+            );// 수정된 데이터를 DB에 적용.
         }
+
+        // 권한 레벨이 달라졌을 경우, 해당 정보를 personal_info 테이블에 업데이트
         await db.query('UPDATE personal_info SET authority = $1 WHERE phone_number = $2', [authority_type, phone_number]);
+        // 기존 list 페이지로 리디렉션
         return res.redirect('/list');
     } catch (err) {
         console.error(err);
@@ -463,8 +501,9 @@ exports.renderUpdateStaff = async (req, res, next) => {
     }
 };
 
+// 환자 | 보호자 정보 수정 기능 모듈
 exports.renderUpdatePatient = async (req, res, next) => {
-    const {
+    const { // 쿼리로 부터 수정된 데이터를 받아옴.
         phone_number,
         name,
         age,
@@ -480,9 +519,9 @@ exports.renderUpdatePatient = async (req, res, next) => {
         return res.status(400).send('필수 항목이 누락되었습니다.');
     }
 
-    try {
+    try { // 환자 | 보호자 판별
         const Result = await db.query('SELECT * FROM patient WHERE phone_number = $1', [phone_number]);
-        if (Result.rows.length > 0) {
+        if (Result.rows.length > 0) { // 수정할 인물이 환자라면,
             await db.query(`UPDATE patient 
                 SET 
                     name= $1, 
@@ -494,19 +533,24 @@ exports.renderUpdatePatient = async (req, res, next) => {
                 WHERE phone_number = $7
                 `,
                 [name, gender, age, acuity, disease, admission_date, phone_number]
-            );
-        } else {
+            ); // 수정된 정보를 환자 테이블의 해당 인물에게 업데이트
+        } else { // 보호자라면,
             const p_name = await db.query('SELECT name FROM patient WHERE phone_number = $1', [patient_phone]);
+
+            // 만약 보호자가 환자 전화번호를 잘못 기재했을 시,
             if (p_name.rows.length === 0) {
                 return res.status(400).send('본 병원에 해당 환자는 없습니다.');
             }
+
+            // 만약 보호자가 환자 전화번호를 변경했을 시,
             const tmp = await db.query('SELECT name FROM patient WHERE next_of_kin = $1', [phone_number]);
-            if (tmp.rows.length === 1) {
+            if (tmp.rows.length === 1) { // 이전 환자에게 등록되었던 보호자의 전화번호를 삭제함.
                 await db.query(`UPDATE patient 
                 SET next_of_kin = $1 
                 WHERE next_of_kin = $2`, [null, phone_number]);
             }
 
+            // 보호자 정보 갱신
             await db.query(`UPDATE next_of_kin 
                 SET 
                     name= $1, 
@@ -519,6 +563,8 @@ exports.renderUpdatePatient = async (req, res, next) => {
                 `,
                 [name, gender, age, relationship, p_name.rows[0].name, patient_phone, phone_number]
             );
+
+            // 새로 바뀐 환자 전화번호에 따라, 해당 환자에게 보호자 전화번호를 새로 삽입.
             await db.query(`UPDATE patient 
                 SET 
                     next_of_kin = $1 WHERE phone_number = $2
@@ -526,6 +572,8 @@ exports.renderUpdatePatient = async (req, res, next) => {
                 [phone_number, patient_phone]
             );
         }
+
+        //성공 시 list-patient 페이지로 리디렉션
         return res.redirect('/list-patient');
     } catch (err) {
         console.error(err);
@@ -533,19 +581,19 @@ exports.renderUpdatePatient = async (req, res, next) => {
     }
 };
 
+// 환자 처방 페이지 랜더링 모듈
 exports.renderPrescriptionPatient = async (req, res, next) => {
-    const {
-        patientSort = 'name',
-        patientOrder = 'asc',
-        mySort = 'pt.name',
-        myOrder = 'asc',
+    const { // 테이블 정렬을 위한 데이터를 쿼리로부터 받아옴.
+        patientSort = 'acuity_level', // 위험도 기준으로 선정렬
+        patientOrder = 'desc',
+        mySort = 'pt.acuity_level', // 위험도 기준으로 선정렬
+        myOrder = 'desc',
     } = req.query; // 기본값 설정
 
-    const staffPhoneNumber = req.user.phone_number;
+    const staffPhoneNumber = req.user.phone_number; // 해당 페이지 랜더링을 요청한 사용자의 전화번호
 
     let count = await db.query('SELECT * FROM prescription WHERE doctor_in_charge = $1', [staffPhoneNumber]);
-    count = count.rows.length;
-
+    count = count.rows.length; // [의사] 처방 페이지와는 관계 없으나, 레이아웃의 담당 환자 수 표시를 위한 데이터.
 
     const validSortFields = ['name', 'gender', 'age', 'phone_number', 'next_of_kin', 'acuity_level',
         'disease', 'hospitalization_date'];
@@ -559,9 +607,10 @@ exports.renderPrescriptionPatient = async (req, res, next) => {
             throw new Error('Invalid sort or order value');
         }
 
-        let patientQuery;
-        let prescriptionQuery;
+        let patientQuery; // 담당의가 미배정 된 환자 리스트
+        let prescriptionQuery; // [의사] 본인이 담당 중인 환자의 리스트 | [간호사] 담담의가 배정된 전체 환자의 리스트
 
+        //담당의가 미배정 된 환자 데이터를 prescription 테이블, patient 테이블로부터 가져오기 위한 쿼리
         patientQuery = `SELECT
             name AS "Name",
             gender AS "Gender",
@@ -572,13 +621,15 @@ exports.renderPrescriptionPatient = async (req, res, next) => {
             disease AS "Disease",
             TO_CHAR(hospitalization_date, 'YYYY-MM-DD') AS "HospitalizationDate"
         FROM patient p
-        WHERE NOT EXISTS (
+        WHERE NOT EXISTS ( --담당의가 배정된 환자는 제외함.
             SELECT *
             FROM prescription
             WHERE prescription.phone_number = p.phone_number
         )
         ORDER BY ${patientSort} ${patientOrder}`;
 
+        // 만약 해당 페이지 랜더링을 요청한 인물이 간호사 직군일 경우
+        // 담당의가 배정된 전체 환자 데이터를 prescription 테이블로부터 불러오는 쿼리
         if(req.user.authority === "간호사" || req.user.authority === "수간호사") {
                 prescriptionQuery = `SELECT 
                 pt.name AS "PatientName",
@@ -596,7 +647,10 @@ exports.renderPrescriptionPatient = async (req, res, next) => {
             LEFT JOIN 
                 doctor d ON p.doctor_in_charge = d.phone_number
             ORDER BY ${mySort} ${myOrder}`;
+
         } else {
+            // 만약 해당 페이지 랜더링을 요청한 인물이 의사 직군일 경우
+            // 본인이 담당하는 환자 데이터를 prescription 테이블로부터 불러오는 쿼리
             prescriptionQuery = `SELECT 
             pt.name AS "PatientName",
             pt.age AS "PatientAge",
@@ -615,7 +669,7 @@ exports.renderPrescriptionPatient = async (req, res, next) => {
         WHERE 
             p.doctor_in_charge = $1
         ORDER BY ${mySort} ${myOrder}`;
-        }
+        } // prescription 테이블의 의사 전화번호와 페이지 랜더링을 요청한 인물의 전화번호를 비교함.
 
 
         // patient 테이블 정렬
@@ -624,17 +678,19 @@ exports.renderPrescriptionPatient = async (req, res, next) => {
         // prescription 테이블 정렬
         if(req.user.authority === "간호사" || req.user.authority === "수간호사")
             prescriptionResult = await db.query(prescriptionQuery);
+            // 담당의가 배정된 모든 환자 데이터를 prescription 테이블로부터 불러오는 쿼리
         else
             prescriptionResult = await db.query(prescriptionQuery, [staffPhoneNumber]);
+            // 본인이 담당하는 환자의 정보를 prescription 테이블로부터 불러오는 쿼리
 
         const patient = patientResult.rows;
         const prescription = prescriptionResult.rows;
 
         res.render('prescription', {
             title: '처방 목록',
-            patient,
-            prescription,
-            count,
+            patient,        // 담당의가 미배정된 환자 리스트 데이터
+            prescription,   // [의사] 본인이 담당하는 환자 리스트 데이터 | [간호사] 담당의가 배정된 모든 환자 리스트 데이터
+            count,          // [의사] 레이아웃에 담당 환자수 출력을 위한 데이터
             currentpatientSort: patientSort,
             currentpatientOrder: patientOrder,
             currentmySort: mySort,
@@ -646,15 +702,21 @@ exports.renderPrescriptionPatient = async (req, res, next) => {
     }
 };
 
+//[의사] 담당 환자 선택 기능 모듈
 exports.renderGetPatient = async (req, res, next) => {
-    const {phone_number} = req.query;
-    const staffPhoneNumber = req.user.phone_number;
+    const {phone_number} = req.query;   // 담당할 환자의 전화번호
+    const staffPhoneNumber = req.user.phone_number; // 담당의 전화번호
     try {
+        // 만약 이미 전공의가 배정된 환자인지
         const isHere = await db.query('SELECT * FROM prescription WHERE phone_number = $1', [phone_number]);
+        // 해당 의사가 담당할 수 있는 환자 수를 초과했는지
         const isMax = await db.query('SELECT * FROM prescription WHERE doctor_in_charge = $1', [staffPhoneNumber]);
-        if (isHere.rows.length === 0 && isMax.rows.length < 5) {
+        if (isHere.rows.length === 0 && isMax.rows.length < 5) { // 어떤 제한 기준에도 걸리지 않았다면,
+            // 해당 환자에게 담당의를 배정하여 prescription 테이블에 넣는 쿼리
             await db.query('INSERT INTO prescription (phone_number, doctor_in_charge, prescription) VALUES ($1, $2, $3)', [phone_number, staffPhoneNumber, "내용 없음."]);
         }
+
+        //성공 시 처방 페이지로 리디렉션
         return res.redirect('/prescription');
     } catch (err) {
         console.error(err);
@@ -662,13 +724,16 @@ exports.renderGetPatient = async (req, res, next) => {
     }
 };
 
+// [담당의] 처방 작성 기능 모듈
 exports.renderWritePrescription = async (req, res, next) => {
-    const {
+    const { //해당 환자의 전화번호와 담당의가 작성한 처방전 데이터를 쿼리로부터 가져옴.
         phone_number,
         prescriptionField
     } = req.body;
-    try {
+
+    try { // prescription 테이블에서, 해당 환자 처방전 필드에 담당의가 작성한 내용을 업데이트 함.
         await db.query('UPDATE prescription SET prescription = $1 WHERE phone_number = $2', [prescriptionField, phone_number]);
+        // 성공 시 처방 페이지로 리디렉션
         return res.redirect('/prescription');
     } catch (err) {
         console.error(err);
@@ -676,10 +741,12 @@ exports.renderWritePrescription = async (req, res, next) => {
     }
 };
 
+// [전담의] 환자 전담 철회 기능 모듈
 exports.renderDeletePrescription = async (req, res, next) => {
-    const {phone_number} = req.query;
-    try {
+    const {phone_number} = req.query; // 전공의가 담당을 철회한 환자의 전화번호
+    try {// prescription 테이블에서 전담이 철회된 환자의 데이터를 삭제함.
         await db.query('DELETE FROM prescription WHERE phone_number = $1', [phone_number]);
+        // 삭제되었을 시, 처방 페이지로 리디렉션
         return res.redirect('/prescription');
     } catch (err) {
         console.error(err);
@@ -687,11 +754,21 @@ exports.renderDeletePrescription = async (req, res, next) => {
     }
 };
 
+// 이메일 출력 모듈
 exports.renderEmails = async (req, res, next) => {
     try {
         // 로그인된 사용자 정보 확인
         if (!req.user || !req.user.phone_number) {
             return res.status(401).send('로그인 정보가 없습니다.');
+        }
+
+        let staffPhoneNumber;
+        let count;
+        if(req.user) {  // [의사직군] 로그인 된 상태라면, 레이아웃의 담당 환자 수에 환자 명수를 출력하기 위한 데이터를 요청하는 쿼리
+            // email 페이지와 실질적인 관계는 없으나, layout 페이지가 항상 표시되므로, 해당 레이아웃에 담당 환자 명수 출력을 위한 코드.
+            staffPhoneNumber = req.user.phone_number;   // 해당 인물 전화번호
+            count = await db.query('SELECT * FROM prescription WHERE doctor_in_charge = $1', [staffPhoneNumber]);
+            count = count.rows.length;  // 해당 사용자(의사)가 돌보고 있는 환자 수
         }
 
         const phoneNumber = req.user.phone_number; // 로그인된 사용자 ID
@@ -725,6 +802,7 @@ exports.renderEmails = async (req, res, next) => {
             title: '이메일 확인',
             sentEmails,
             receivedEmails,
+            count,
             noSentEmails: sentEmails.length === 0, // 보낸 이메일이 없을 때
             noReceivedEmails: receivedEmails.length === 0, // 받은 이메일이 없을 때
         });
@@ -735,6 +813,7 @@ exports.renderEmails = async (req, res, next) => {
     }
 };
 
+// 이메일 삭제 기능 모듈
 exports.deleteEmail = async (req, res, next) => {
     try {
         const { email_id, type } = req.query;
@@ -805,10 +884,20 @@ exports.deleteEmail = async (req, res, next) => {
     }
 };
 
-exports.renderSendEmailForm = (req, res) => {
-    res.render('sendEmail', { title: '이메일 작성 - TODO' });
+// 이메일 전송 모듈
+exports.renderSendEmailForm = async (req, res) => {
+    let staffPhoneNumber;
+    let count;
+    if(req.user) {  // [의사직군] 로그인 된 상태라면, 레이아웃의 담당 환자 수에 환자 명수를 출력하기 위한 데이터를 요청하는 쿼리
+        // join페이지와 실질적인 관계는 없으나, layout 페이지가 항상 표시되므로, 해당 레이아웃에 담당 환자 명수 출력을 위한 코드.
+        staffPhoneNumber = req.user.phone_number;   // 해당 인물 전화번호
+        count = await db.query('SELECT * FROM prescription WHERE doctor_in_charge = $1', [staffPhoneNumber]);
+        count = count.rows.length;  // 해당 사용자(의사)가 돌보고 있는 환자 수
+    }
+    res.render('sendEmail', { title: '이메일 작성', count });
 };
 
+// 이메일 전송 모듈
 exports.sendEmail = async (req, res, next) => {
     try {
         const { receiverPhoneNumber, subject, content } = req.body;

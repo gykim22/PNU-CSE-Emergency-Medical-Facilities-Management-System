@@ -14,10 +14,17 @@
           {% if user and user.phone_number %}
             <div class="user-name">{{'안녕하세요! ' + user.name +' '+ user.authority + '님'}}</div>
             {% if user.authority != "환자" and user.authority != "보호자" %}
+              {% if user.authority != "수간호사" and user.authority != "간호사" %}
+                <div class="half">
+                  <div>담당 환자 수</div>
+                  <div class="count following-count">{{count}}</div>
+                </div>
+              {% endif %}
+              {% if user.authority == "수간호사" or user.authority == "간호사" %}
               <div class="half">
-                <div>담당 환자 수</div>
-                <div class="count following-count">{{count}}</div>
+                <div></div>
               </div>
+              {% endif %}
               <div class="half">
                 <div>상태</div>
                 <div class="count follower-count">{{user.state}}</div>

@@ -83,8 +83,10 @@
           <th><a href="/list?nurseSort=gender&nurseOrder={{ 'desc' if currentNurseSort == 'gender' and currentNurseOrder == 'asc' else 'asc' }}">성별</a></th>
           <th><a href="/list?nurseSort=age&nurseOrder={{ 'desc' if currentNurseSort == 'age' and currentNurseOrder == 'asc' else 'asc' }}">나이</a></th>
           <th><a href="/list?nurseSort=phone_number&nurseOrder={{ 'desc' if currentNurseSort == 'phone_number' and currentNurseOrder == 'asc' else 'asc' }}">전화번호</a></th>
-          {% if user.authority == "병원장" %}
+          {% if user.authority == "병원장" or user.authority == "수간호사" %}
             <th>수정</th>
+          {% endif %}
+          {% if user.authority == "병원장" %}
             <th>삭제</th>
           {% endif %}
         </tr>
@@ -102,10 +104,12 @@
           <td>{{ nurse.Gender }}</td>
           <td>{{ nurse.Age }}</td>
           <td>{{ nurse.PhoneNumber }}</td>
-          {% if user.authority == "병원장" %}
+          {% if (user.authority == "병원장" or user.authority == "수간호사") and nurse.Role !="수간호사" %}
             <td>
               <input type="radio" name="selected" value="{{ nurse.PhoneNumber }}" onclick="showEditFields('{{ nurse.PhoneNumber }}', '{{ nurse.Role }}','{{ nurse.Salary }}', '{{user.authority}}')">
             </td>
+          {% endif %}
+          {% if user.authority == "병원장" %}
             <td>
               <!-- 삭제 버튼 추가 -->
               <a href="/delete-staff?phone_number={{ nurse.PhoneNumber }}">삭제</a>
@@ -182,6 +186,9 @@
     } else if(user_authority === "전공교수") {
       salaryField.style.display = "none"; // 숨기기
       authorityTypeSelect.querySelector('option[value="2"]').disabled = true;
+      salaryField.value = salary;
+    } else if (user_authority === "수간호사") {
+      salaryField.style.display = "none"; // 숨기기
       salaryField.value = salary;
     }
 
